@@ -46,7 +46,7 @@
 ### Anthropic (Claude)
 - **[Claude 3.7 Sonnet](./SystemPrompts/Anthropic/20250225-Claude3.7-Sonnet.md)** - Latest model
 - **[Claude Computer Use](./SystemPrompts/Anthropic/20241022-Computer-Use.md)** - Desktop interaction capability
-- **[Claude API](./SystemPrompts/Anthropic/20241022-Claude-3-5-Sonnet-API.md)** - API implementation
+- **[Claude 3.5 Sonnet](./SystemPrompts/Anthropic/20240904-Claude3.5-Sonnet.md)** - Enhanced reasoning model
 - [📁 **All Anthropic Prompts (8 files)**](./SystemPrompts/Anthropic/)
 
 ### Google (Gemini)
@@ -73,33 +73,33 @@
 📋 **Full Index**: [CustomInstructions README](./CustomInstructions/README.md)
 
 ### 🔧 Development & Coding
-- **[Node.js GPT - Project Builder](./CustomInstructions/ChatGPT/02zmxuXd5_Node.js%20GPT%20-%20Project%20Builder.md)** - Full-stack development
+- **[Node.js GPT - Project Builder](./CustomInstructions/ChatGPT/02zmxuXd5_Node.js GPT - Project Builder.md)** - Full-stack development
 - **[Code Copilot](./CustomInstructions/ChatGPT/2DQzU5UZl_Code_Copilot.md)** - Advanced coding assistant
 - **[Software Architect GPT](./CustomInstructions/ChatGPT/J0FYgDhN5_Software_Architect_GPT.md)** - System design expert
-- **[Unreal Assistant](./CustomInstructions/ChatGPT/1BcoLIZwr_Unreal%20Assistant.md)** - Game development
+- **[Unreal Assistant](./CustomInstructions/ChatGPT/1BcoLIZwr_Unreal Assistant.md)** - Game development
 - **[Flutter Pro](./CustomInstructions/ChatGPT/L1qbWEVCc_Flutter_Pro.md)** - Mobile development
 
 ### 🛡️ Security & Research
 - **[Red Team Mentor](./CustomInstructions/ChatGPT/03nVt600N_Red_Team_Mentor.md)** - Security testing
 - **[Cyber Security Shield](./CustomInstructions/ChatGPT/AGBxCznEK_Cyber_Security_Shield_by_Planet_Zuda.md)** - Defense strategies
-- **[Reverse Engineering Oracle](./CustomInstructions/ChatGPT/BZjyGviw5_Reverse%20Engineering%20Oracle.md)** - Code analysis
+- **[Reverse Engineering Oracle](./CustomInstructions/ChatGPT/BZjyGviw5_Reverse Engineering Oracle.md)** - Code analysis
 - **[P0tS3c AI Hacking Assistant](./CustomInstructions/ChatGPT/LCv3cx13H_P0tS3c_your_AI_hacking_assistant.md)** - Security research
 
 ### ✍️ Creative & Writing
 - **[Creative Writing Mentor](./CustomInstructions/ChatGPT/6Wdh8gOoK_Creative_Writing_Mentor.md)** - Story development
-- **[Copywriter GPT](./CustomInstructions/ChatGPT/Ji2QOyMml_Copywriter%20GPT.md)** - Marketing content
+- **[Copywriter GPT](./CustomInstructions/ChatGPT/Ji2QOyMml_Copywriter GPT.md)** - Marketing content
 - **[Blog Expert](./CustomInstructions/ChatGPT/PWizFQk8C_Blog_Expert.md)** - Content creation
-- **[Write For Me](./CustomInstructions/ChatGPT/B3hgivKK9_Write%20For%20Me.md)** - General writing assistant
+- **[Write For Me](./CustomInstructions/ChatGPT/B3hgivKK9_Write For Me.md)** - General writing assistant
 
 ### 🎓 Learning & Education  
-- **[Mr. Ranedeer](./CustomInstructions/ChatGPT/9PKhaweyb_Mr.%20Ranedeer%5B2.7%5D.md)** - Personalized tutor
+- **[Mr. Ranedeer](./CustomInstructions/ChatGPT/9PKhaweyb_Mr. Ranedeer[2.7].md)** - Personalized tutor
 - **[Academic Assistant Pro](./CustomInstructions/ChatGPT/Ej5zYQRIB_Academic_Assistant_Pro.md)** - Research support
-- **[Math AI](./CustomInstructions/ChatGPT/2OyX2ZiUk_Math%20AI.md)** - Mathematics expert
+- **[Math AI](./CustomInstructions/ChatGPT/2OyX2ZiUk_Math AI.md)** - Mathematics expert
 - **[Teaching Strategies](./CustomInstructions/ChatGPT/96gjLDwVC_Teaching_Strategies.md)** - Educational methods
 
 ### 💼 Business & Productivity
-- **[CEO GPT](./CustomInstructions/ChatGPT/EvV57BRZ0_CEO%20GPT.md)** - Executive decisions
-- **[Business Plan Sage](./CustomInstructions/ChatGPT/NsLil9uoU_Business%20Plan%20Sage.md)** - Strategic planning
+- **[CEO GPT](./CustomInstructions/ChatGPT/EvV57BRZ0_CEO GPT.md)** - Executive decisions
+- **[Business Plan Sage](./CustomInstructions/ChatGPT/NsLil9uoU_Business Plan Sage.md)** - Strategic planning
 - **[Resume Revolution](./CustomInstructions/ChatGPT/B1ibgmuus_Resume_Revolution.md)** - Career development
 - **[Email Writer GPT](./CustomInstructions/ChatGPT/BWA810CFR_AI_Email_Writer_GPT.md)** - Professional communication
 
@@ -229,9 +229,9 @@ Got a prompt that consistently delivers great results? We welcome contributions!
 ### 🔗 Quick Links
 - [Main README](./README.md) - Project overview
 - [CLAUDE.md](./CLAUDE.md) - Developer guidance for Claude Code
-- [.scripts/](./scripts/) - Repository management tools
-- [Issues](../../issues) - Report problems or request features
-- [Discussions](../../discussions) - Community discussions
+- [.scripts/](./.scripts/) - Repository management tools
+- [GitHub Issues](https://github.com/kingkillery/TheBigPromptLibrary/issues) - Report problems or request features
+- [GitHub Discussions](https://github.com/kingkillery/TheBigPromptLibrary/discussions) - Community discussions
 
 ---
 

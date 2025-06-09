@@ -77,13 +77,17 @@ def validate_markdown_links(file_path: Path, repo_root: Path) -> List[str]:
     matches = re.findall(link_pattern, content)
     
     for text, link in matches:
-        # Skip external URLs
+        # Skip external URLs and anchors
         if link.startswith(('http://', 'https://', 'mailto:', '#')):
             continue
         
         # Handle relative paths
         if link.startswith('./'):
             link = link[2:]
+        
+        # Decode URL encoding (handle %20 spaces)
+        import urllib.parse
+        link = urllib.parse.unquote(link)
         
         # Resolve path relative to file location
         if link.startswith('/'):
