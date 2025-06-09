@@ -12,11 +12,13 @@ Welcome to your one-stop collection for **prompts that actually work**! This rep
 
 ## Browse by Category
 
+- [📚 **Master Index** - Complete Inventory](./MasterREADME.md)
 - [Articles & Guides](./Articles/README.md)
 - [Custom Instructions](./CustomInstructions/README.md)
 - [System Prompts](./SystemPrompts/README.md)
+- [Comprehensive Guides](./Guides/README.md)
 - [Advanced Techniques](./Jailbreak/README.md)
-- [Security & Protection](./Security/GPT-Protections/README.md)
+- [Security & Protection](./Security/README.md)
 
 ## Quick Start
 
