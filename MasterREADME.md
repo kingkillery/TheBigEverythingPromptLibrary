@@ -8,11 +8,11 @@
 
 | 🎯 **By Content Type** | 🔧 **By Use Case** | 📊 **By Platform** |
 |------------------------|-------------------|-------------------|
-| [System Prompts](#-system-prompts) | [Development](#-development--coding) | [OpenAI](#openai-chatgpt) |
-| [Custom Instructions](#-custom-instructions) | [Security Research](#-security--research) | [Anthropic](#anthropic-claude) |
-| [Comprehensive Guides](#-comprehensive-guides) | [Creative Writing](#-creative--writing) | [Google](#google-gemini) |
-| [Learning Resources](#-learning--resources) | [Learning & Education](#-learning--education) | [Microsoft](#microsoft-copilot) |
-| [Advanced Techniques](#-advanced-techniques) | [Business & Productivity](#-business--productivity) | [All Platforms](#all-platforms) |
+| [System Prompts](#system-prompts) | [Development](#development--coding) | [OpenAI](#openai-chatgpt) |
+| [Custom Instructions](#custom-instructions) | [Security Research](#security--research) | [Anthropic](#anthropic-claude) |
+| [Comprehensive Guides](#comprehensive-guides) | [Creative Writing](#creative--writing) | [Google](#google-gemini) |
+| [Learning Resources](#learning--resources) | [Learning & Education](#learning--education) | [Microsoft](#microsoft-copilot) |
+| [Advanced Techniques](#advanced-techniques) | [Business & Productivity](#business--productivity) | [All Platforms](#all-platforms) |
 
 ---
 
@@ -228,7 +228,6 @@ Got a prompt that consistently delivers great results? We welcome contributions!
 
 ### 🔗 Quick Links
 - [Main README](./README.md) - Project overview
-- [CLAUDE.md](./CLAUDE.md) - Developer guidance for Claude Code
 - [.scripts/](./.scripts/) - Repository management tools
 - [GitHub Issues](https://github.com/kingkillery/TheBigPromptLibrary/issues) - Report problems or request features
 - [GitHub Discussions](https://github.com/kingkillery/TheBigPromptLibrary/discussions) - Community discussions
