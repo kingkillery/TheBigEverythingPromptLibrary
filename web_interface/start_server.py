@@ -27,9 +27,9 @@ def start_server():
     if not check_requirements():
         return
     
-    # Change to backend directory
+    # Get the absolute path to the backend directory
     backend_dir = Path(__file__).parent / "backend"
-    os.chdir(backend_dir)
+    backend_abs_path = str(backend_dir.resolve())
     
     print("🚀 Starting The Big Everything Prompt Library Web Interface...")
     print("📍 Server will be available at: http://localhost:8000")
@@ -38,11 +38,33 @@ def start_server():
     
     try:
         import uvicorn
-        uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
+        import sys
+        
+        # Add backend directory to Python path
+        if backend_abs_path not in sys.path:
+            sys.path.insert(0, backend_abs_path)
+        
+        # Change to backend directory for relative imports
+        original_cwd = os.getcwd()
+        os.chdir(backend_dir)
+        
+        # Start the server
+        uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True, 
+                   reload_dirs=[backend_abs_path])
+                   
     except KeyboardInterrupt:
         print("\n🛑 Server stopped")
     except Exception as e:
         print(f"❌ Error starting server: {e}")
+        print("💡 Try running from the backend directory directly:")
+        print(f"   cd {backend_dir}")
+        print("   python -m uvicorn app:app --reload")
+    finally:
+        # Restore original directory
+        try:
+            os.chdir(original_cwd)
+        except:
+            pass
 
 if __name__ == "__main__":
     start_server()

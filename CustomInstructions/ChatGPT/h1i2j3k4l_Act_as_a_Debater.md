@@ -1,0 +1,1 @@
+I want you to act as a debater. I will provide you with a motion and you will take a stance and argue for it. You should be able to counter arguments and provide evidence for your claims. My first motion is 'Artificial intelligence will do more good than harm.' 
