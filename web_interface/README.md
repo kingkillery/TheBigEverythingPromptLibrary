@@ -4,12 +4,15 @@ A modern web interface for searching and exploring the comprehensive prompt libr
 
 ## Features
 
-🔍 **Powerful Search**: Full-text search across all prompts and content
-📂 **Smart Filtering**: Filter by category, tags, and content type  
-🏷️ **Tag System**: Automatic tag extraction and filtering
-📱 **Responsive Design**: Works on desktop, tablet, and mobile
+🔍 **Advanced Search**: Multi-layered search with keyword, fuzzy, and semantic matching
+⭐ **Quality Scoring**: AI-powered quality assessment for every prompt (0.0-1.0 scale)
+📊 **Smart Filtering**: Filter by category, tags, quality score, and sort options
+🎯 **Fuzzy Matching**: Find content even with typos and partial matches
+🧠 **Semantic Search**: Meaning-based search beyond keyword matching (optional)
+🤖 **AI Enhancement**: LLM-powered prompt analysis and improvement tools (optional)
+📂 **Smart Categorization**: Automatic tag extraction and content classification
+📱 **Responsive Design**: Optimized for desktop, tablet, and mobile
 ⚡ **Real-time Updates**: Auto-detects new files when added to repository
-🎯 **Fuzzy Matching**: Find content even with partial or approximate searches
 
 ## Quick Start
 
@@ -25,14 +28,20 @@ A modern web interface for searching and exploring the comprehensive prompt libr
    pip install -r requirements.txt
    ```
 
-2. **Start the Server**
+2. **Test Enhanced Search (Optional)**
+   ```bash
+   python test_enhanced_search.py
+   ```
+
+3. **Start the Server**
    ```bash
    python start_server.py
    ```
 
-3. **Access the Interface**
+4. **Access the Interface**
    - Web Interface: http://localhost:8000
    - API Documentation: http://localhost:8000/docs
+   - Enhanced search features will auto-activate if dependencies are available
 
 ## Content Coverage
 

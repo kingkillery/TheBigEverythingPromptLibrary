@@ -23,6 +23,14 @@ sys.path.append(str(REPO_ROOT / ".scripts"))
 
 import gptparser
 
+# Enhanced search capabilities
+try:
+    from enhanced_search import create_enhanced_search_engine
+    ENHANCED_SEARCH_AVAILABLE = True
+except ImportError:
+    ENHANCED_SEARCH_AVAILABLE = False
+    print("Enhanced search not available. Install with: pip install fuzzywuzzy python-levenshtein scikit-learn")
+
 # Optional semantic search
 try:
     from semantic_search import create_semantic_search_engine
@@ -78,6 +86,7 @@ class IndexManager:
         self.last_updated = None
         self.semantic_search = None
         self.llm_connector = None
+        self.enhanced_search = None
         self.build_index()
     
     def get_file_content(self, file_path: Path) -> str:
@@ -264,13 +273,48 @@ class IndexManager:
             except Exception as e:
                 print(f"Could not initialize LLM connector: {e}")
                 self.llm_connector = None
+        
+        # Initialize enhanced search if available
+        if ENHANCED_SEARCH_AVAILABLE:
+            try:
+                self.enhanced_search = create_enhanced_search_engine()
+                print("✅ Enhanced search engine initialized")
+            except Exception as e:
+                print(f"Could not initialize enhanced search: {e}")
+                self.enhanced_search = None
     
     def search(self, query: str = "", category: str = "", tags: List[str] = None, 
-               limit: int = 50, offset: int = 0) -> SearchResponse:
-        """Search the index with filters"""
+               limit: int = 50, offset: int = 0, min_quality: float = 0.0,
+               sort_by: str = "relevance") -> SearchResponse:
+        """Enhanced search with quality filtering and advanced scoring"""
         if tags is None:
             tags = []
         
+        # Use enhanced search if available
+        if self.enhanced_search and (query or min_quality > 0.0):
+            results, stats = self.enhanced_search.advanced_search(
+                items=self.index,
+                query=query,
+                min_quality=min_quality,
+                max_results=limit + offset,  # Get more for pagination
+                category_filter=category,
+                tag_filter=tags,
+                sort_by=sort_by
+            )
+            
+            # Apply pagination
+            total = len(results)
+            paginated_results = results[offset:offset + limit]
+            
+            return SearchResponse(
+                items=paginated_results,
+                total=total,
+                query=query,
+                filters={"category": category, "tags": tags, "min_quality": min_quality, 
+                        "sort_by": sort_by, "search_stats": stats}
+            )
+        
+        # Fallback to original search logic
         results = self.index
         
         # Filter by category
@@ -367,20 +411,31 @@ async def read_root():
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; }
-            .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+            .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
             .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
             .search-section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
             .search-input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 16px; margin-bottom: 15px; }
-            .filters { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px; }
+            .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 15px; }
             .filter-select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; background: white; }
+            .quality-slider { width: 100%; margin: 10px 0; }
+            .advanced-filters { display: none; margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; }
+            .toggle-filters { color: #2563eb; cursor: pointer; text-decoration: underline; font-size: 14px; }
             .results { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-            .result-item { padding: 20px; border-bottom: 1px solid #eee; }
+            .result-item { padding: 20px; border-bottom: 1px solid #eee; position: relative; }
             .result-item:last-child { border-bottom: none; }
+            .result-item.high-quality { border-left: 4px solid #10b981; }
+            .result-item.medium-quality { border-left: 4px solid #f59e0b; }
+            .result-item.low-quality { border-left: 4px solid #ef4444; }
             .result-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #2563eb; }
-            .result-meta { font-size: 12px; color: #666; margin-bottom: 8px; }
+            .result-meta { font-size: 12px; color: #666; margin-bottom: 8px; display: flex; gap: 15px; align-items: center; }
             .result-description { margin-bottom: 10px; }
             .result-tags { display: flex; gap: 5px; flex-wrap: wrap; }
             .tag { background: #e5e7eb; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
+            .quality-badge { padding: 2px 6px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+            .quality-high { background: #d1fae5; color: #065f46; }
+            .quality-medium { background: #fef3c7; color: #92400e; }
+            .quality-low { background: #fee2e2; color: #991b1b; }
+            .search-stats { background: #f3f4f6; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; }
             .loading { text-align: center; padding: 40px; color: #666; }
             .stats { font-size: 14px; color: #666; margin-bottom: 15px; }
             .refresh-btn { background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
@@ -396,7 +451,10 @@ async def read_root():
         <div class="container">
             <div class="header">
                 <h1>🚀 The Big Everything Prompt Library</h1>
-                <p>Search through 1,800+ prompts, guides, and AI resources</p>
+                <p>Search through 1,800+ high-quality prompts, guides, and AI resources with advanced filtering</p>
+                <div style="font-size: 14px; color: #666; margin-top: 10px;">
+                    ✨ Enhanced with quality scoring, fuzzy search, and semantic matching
+                </div>
             </div>
             
             <div class="search-section">
@@ -409,10 +467,26 @@ async def read_root():
                     <select id="tagFilter" class="filter-select">
                         <option value="">All Tags</option>
                     </select>
+                    <select id="sortFilter" class="filter-select">
+                        <option value="relevance">Sort: Relevance</option>
+                        <option value="quality">Sort: Quality</option>
+                        <option value="title">Sort: Title</option>
+                        <option value="newest">Sort: Newest</option>
+                    </select>
                     <button id="refreshBtn" class="refresh-btn">Refresh Index</button>
+                    <span class="toggle-filters" onclick="toggleAdvancedFilters()">🔧 Advanced Filters</span>
+                </div>
+                
+                <div id="advancedFilters" class="advanced-filters">
+                    <label for="qualitySlider">Minimum Quality Score: <span id="qualityValue">0.0</span></label>
+                    <input type="range" id="qualitySlider" class="quality-slider" min="0" max="1" step="0.1" value="0">
+                    <div style="margin-top: 10px;">
+                        <label><input type="checkbox" id="highQualityOnly"> High Quality Only (0.7+)</label>
+                    </div>
                 </div>
                 
                 <div id="stats" class="stats"></div>
+                <div id="searchStats" class="search-stats" style="display: none;"></div>
             </div>
             
             <div id="results" class="results">
@@ -434,14 +508,21 @@ async def read_root():
             let currentResults = [];
             
             // API calls
-            async function searchPrompts(query = '', category = '', tag = '') {
+            async function searchPrompts(query = '', category = '', tag = '', minQuality = 0.0, sortBy = 'relevance') {
                 const params = new URLSearchParams();
                 if (query) params.append('query', query);
                 if (category) params.append('category', category);
                 if (tag) params.append('tags', tag);
+                if (minQuality > 0) params.append('min_quality', minQuality);
+                if (sortBy !== 'relevance') params.append('sort_by', sortBy);
                 
                 const response = await fetch(`/api/search?${params}`);
                 return await response.json();
+            }
+            
+            function toggleAdvancedFilters() {
+                const filters = document.getElementById('advancedFilters');
+                filters.style.display = filters.style.display === 'none' ? 'block' : 'none';
             }
             
             async function getCategories() {
@@ -500,33 +581,73 @@ async def read_root():
             function renderResults(data) {
                 const resultsDiv = document.getElementById('results');
                 const statsDiv = document.getElementById('stats');
+                const searchStatsDiv = document.getElementById('searchStats');
                 
                 statsDiv.textContent = `Found ${data.total} results`;
                 
+                // Show enhanced search stats if available
+                if (data.filters && data.filters.search_stats) {
+                    const stats = data.filters.search_stats;
+                    searchStatsDiv.innerHTML = `
+                        <strong>Search Analysis:</strong> 
+                        Average Quality: ${(stats.avg_quality * 100).toFixed(0)}% | 
+                        High Quality: ${stats.quality_distribution.high} items | 
+                        Keywords: ${stats.query_keywords.join(', ')}
+                    `;
+                    searchStatsDiv.style.display = 'block';
+                } else {
+                    searchStatsDiv.style.display = 'none';
+                }
+                
                 if (data.items.length === 0) {
-                    resultsDiv.innerHTML = '<div class="loading">No results found</div>';
+                    resultsDiv.innerHTML = '<div class="loading">No results found. Try adjusting your filters or search terms.</div>';
                     return;
                 }
                 
-                const html = data.items.map(item => `
-                    <div class="result-item">
-                        <div class="result-title">${escapeHtml(item.title)}</div>
-                        <div class="result-meta">
-                            ${item.category}${item.subcategory ? ` > ${item.subcategory}` : ''}
-                            ${item.version ? ` (v${item.version})` : ''}
-                            <span id="llm-buttons-${item.id}"></span>
+                const html = data.items.map(item => {
+                    // Calculate quality score for display (if enhanced search is available)
+                    const qualityClass = getQualityClass(item);
+                    const qualityBadge = getQualityBadge(item);
+                    
+                    return `
+                        <div class="result-item ${qualityClass}">
+                            <div class="result-title">${escapeHtml(item.title)}</div>
+                            <div class="result-meta">
+                                <span>${item.category}${item.subcategory ? ` > ${item.subcategory}` : ''}</span>
+                                <span>${item.version ? `v${item.version}` : ''}</span>
+                                ${qualityBadge}
+                                <span id="llm-buttons-${item.id}"></span>
+                            </div>
+                            <div class="result-description">${escapeHtml(item.description)}</div>
+                            <div class="result-tags">
+                                ${item.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
+                            </div>
                         </div>
-                        <div class="result-description">${escapeHtml(item.description)}</div>
-                        <div class="result-tags">
-                            ${item.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
-                        </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
                 
                 resultsDiv.innerHTML = html;
                 
                 // Add LLM buttons if available
                 addLLMButtons(data.items);
+            }
+            
+            function getQualityClass(item) {
+                // Simple heuristic for quality classification
+                const contentLength = item.content.length;
+                const hasStructure = item.content.includes('#') || item.content.includes('1.') || item.content.includes('-');
+                const detailedDescription = item.description.length > 50;
+                
+                if (contentLength > 800 && hasStructure && detailedDescription) return 'high-quality';
+                if (contentLength > 300 && (hasStructure || detailedDescription)) return 'medium-quality';
+                return 'low-quality';
+            }
+            
+            function getQualityBadge(item) {
+                const qualityClass = getQualityClass(item);
+                if (qualityClass === 'high-quality') return '<span class="quality-badge quality-high">High Quality</span>';
+                if (qualityClass === 'medium-quality') return '<span class="quality-badge quality-medium">Medium Quality</span>';
+                return '<span class="quality-badge quality-low">Basic</span>';
             }
             
             async function addLLMButtons(items) {
@@ -699,9 +820,22 @@ async def read_root():
                     const query = document.getElementById('searchInput').value;
                     const category = document.getElementById('categoryFilter').value;
                     const tag = document.getElementById('tagFilter').value;
+                    const sortBy = document.getElementById('sortFilter').value;
+                    
+                    // Get quality filters
+                    let minQuality = 0.0;
+                    const qualitySlider = document.getElementById('qualitySlider');
+                    const highQualityOnly = document.getElementById('highQualityOnly');
+                    
+                    if (qualitySlider) {
+                        minQuality = parseFloat(qualitySlider.value);
+                    }
+                    if (highQualityOnly && highQualityOnly.checked) {
+                        minQuality = Math.max(minQuality, 0.7);
+                    }
                     
                     try {
-                        const results = await searchPrompts(query, category, tag);
+                        const results = await searchPrompts(query, category, tag, minQuality, sortBy);
                         renderResults(results);
                     } catch (error) {
                         console.error('Search error:', error);
@@ -714,6 +848,25 @@ async def read_root():
             document.getElementById('searchInput').addEventListener('input', performSearch);
             document.getElementById('categoryFilter').addEventListener('change', performSearch);
             document.getElementById('tagFilter').addEventListener('change', performSearch);
+            document.getElementById('sortFilter').addEventListener('change', performSearch);
+            
+            // Quality filter listeners
+            document.addEventListener('DOMContentLoaded', function() {
+                const qualitySlider = document.getElementById('qualitySlider');
+                const qualityValue = document.getElementById('qualityValue');
+                const highQualityOnly = document.getElementById('highQualityOnly');
+                
+                if (qualitySlider) {
+                    qualitySlider.addEventListener('input', function() {
+                        qualityValue.textContent = this.value;
+                        performSearch();
+                    });
+                }
+                
+                if (highQualityOnly) {
+                    highQualityOnly.addEventListener('change', performSearch);
+                }
+            });
             
             document.getElementById('refreshBtn').addEventListener('click', async () => {
                 const btn = document.getElementById('refreshBtn');
@@ -751,11 +904,13 @@ async def search_prompts(
     category: str = Query("", description="Filter by category"),
     tags: str = Query("", description="Comma-separated tags"),
     limit: int = Query(50, description="Number of results per page"),
-    offset: int = Query(0, description="Offset for pagination")
+    offset: int = Query(0, description="Offset for pagination"),
+    min_quality: float = Query(0.0, description="Minimum quality score (0.0-1.0)"),
+    sort_by: str = Query("relevance", description="Sort by: relevance, quality, title, newest")
 ):
-    """Search prompts with optional filters"""
+    """Enhanced search with quality filtering and advanced scoring"""
     tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()] if tags else []
-    return index_manager.search(query, category, tag_list, limit, offset)
+    return index_manager.search(query, category, tag_list, limit, offset, min_quality, sort_by)
 
 @app.get("/api/categories")
 async def get_categories():
@@ -923,6 +1078,61 @@ async def suggest_use_cases_endpoint(
     
     use_cases = await index_manager.llm_connector.suggest_use_cases(prompt_content)
     return {"use_cases": use_cases or []}
+
+@app.get("/api/search/suggestions")
+async def get_search_suggestions(
+    query: str = Query(..., description="Partial search query")
+):
+    """Get search suggestions based on query"""
+    if not index_manager.enhanced_search:
+        return {"suggestions": []}
+    
+    suggestions = index_manager.enhanced_search.suggest_related_queries(query, index_manager.index)
+    return {"suggestions": suggestions}
+
+@app.get("/api/quality-filter")
+async def get_quality_distribution():
+    """Get quality score distribution for the entire collection"""
+    if not index_manager.enhanced_search:
+        return {"distribution": {}, "available": False}
+    
+    quality_scores = []
+    for item in index_manager.index:
+        score = index_manager.enhanced_search.quality_scorer.score_prompt_quality(item)
+        quality_scores.append(score)
+    
+    import numpy as np
+    distribution = {
+        "total_items": len(quality_scores),
+        "average_quality": float(np.mean(quality_scores)),
+        "high_quality": len([s for s in quality_scores if s >= 0.7]),
+        "medium_quality": len([s for s in quality_scores if 0.4 <= s < 0.7]),
+        "low_quality": len([s for s in quality_scores if s < 0.4]),
+        "percentiles": {
+            "90th": float(np.percentile(quality_scores, 90)),
+            "75th": float(np.percentile(quality_scores, 75)),
+            "50th": float(np.percentile(quality_scores, 50)),
+            "25th": float(np.percentile(quality_scores, 25))
+        }
+    }
+    
+    return {"distribution": distribution, "available": True}
+
+@app.get("/api/search/analyze")
+async def analyze_search_results(
+    query: str = Query(..., description="Search query to analyze")
+):
+    """Analyze search result quality"""
+    if not index_manager.enhanced_search:
+        return {"analysis": {}, "available": False}
+    
+    # Perform search
+    search_results = index_manager.search(query=query, limit=20)
+    
+    # Analyze results
+    analysis = index_manager.enhanced_search.analyze_search_quality(search_results.items, query)
+    
+    return {"analysis": analysis, "available": True}
 
 if __name__ == "__main__":
     import uvicorn

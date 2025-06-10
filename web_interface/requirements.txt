@@ -5,7 +5,14 @@ pydantic==2.5.0
 python-multipart==0.0.6
 httpx==0.25.0
 
-# Optional: For semantic search capabilities
-# Uncomment the lines below to enable semantic search
-# sentence-transformers==2.2.2
-# numpy==1.24.3
+# Enhanced search capabilities
+sentence-transformers==2.2.2
+numpy==1.24.3
+scikit-learn==1.3.0
+fuzzywuzzy==0.18.0
+python-levenshtein==0.20.9
+
+# Text processing
+markdown==3.5.1
+python-markdown-math==0.8
+pygments==2.15.1
