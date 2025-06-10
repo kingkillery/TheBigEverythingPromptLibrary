@@ -31,6 +31,14 @@ except ImportError:
     SEMANTIC_SEARCH_AVAILABLE = False
     print("Semantic search not available. Install with: pip install sentence-transformers numpy")
 
+# Optional LLM connector
+try:
+    from llm_connector import create_llm_connector, enhance_prompt_workflow
+    LLM_CONNECTOR_AVAILABLE = True
+except ImportError:
+    LLM_CONNECTOR_AVAILABLE = False
+    print("LLM connector not available. Install with: pip install httpx")
+
 app = FastAPI(title="Prompt Library API", version="1.0.0")
 
 # Configure CORS
@@ -69,6 +77,7 @@ class IndexManager:
         self.index: List[PromptItem] = []
         self.last_updated = None
         self.semantic_search = None
+        self.llm_connector = None
         self.build_index()
     
     def get_file_content(self, file_path: Path) -> str:
@@ -245,6 +254,16 @@ class IndexManager:
             except Exception as e:
                 print(f"Could not initialize semantic search: {e}")
                 self.semantic_search = None
+        
+        # Initialize LLM connector if available
+        if LLM_CONNECTOR_AVAILABLE:
+            try:
+                self.llm_connector = create_llm_connector()
+                if self.llm_connector:
+                    print(f"✅ LLM connector initialized with {len(self.llm_connector.get_available_models())} free models")
+            except Exception as e:
+                print(f"Could not initialize LLM connector: {e}")
+                self.llm_connector = None
     
     def search(self, query: str = "", category: str = "", tags: List[str] = None, 
                limit: int = 50, offset: int = 0) -> SearchResponse:
@@ -365,6 +384,11 @@ async def read_root():
             .loading { text-align: center; padding: 40px; color: #666; }
             .stats { font-size: 14px; color: #666; margin-bottom: 15px; }
             .refresh-btn { background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+            .llm-btn { background: #10b981; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 5px; }
+            .llm-section { background: #f9f9f9; padding: 15px; margin-top: 10px; border-radius: 6px; border-left: 4px solid #10b981; }
+            .llm-result { background: white; padding: 10px; border-radius: 4px; margin: 10px 0; white-space: pre-wrap; }
+            .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+            .modal-content { background: white; margin: 5% auto; padding: 20px; border-radius: 8px; max-width: 800px; max-height: 80%; overflow-y: auto; }
             @media (max-width: 768px) { .filters { flex-direction: column; } .filter-select { width: 100%; } }
         </style>
     </head>
@@ -393,6 +417,15 @@ async def read_root():
             
             <div id="results" class="results">
                 <div class="loading">Loading prompts...</div>
+            </div>
+        </div>
+        
+        <!-- LLM Enhancement Modal -->
+        <div id="llmModal" class="modal">
+            <div class="modal-content">
+                <h3>🤖 AI Enhancement Tools</h3>
+                <div id="llmContent"></div>
+                <button onclick="closeLLMModal()" style="margin-top: 20px; padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer;">Close</button>
             </div>
         </div>
 
@@ -426,6 +459,43 @@ async def read_root():
                 return await response.json();
             }
             
+            // LLM API calls
+            async function enhancePrompt(prompt, type = 'improve') {
+                const response = await fetch('/api/llm/enhance', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt, type })
+                });
+                return await response.json();
+            }
+            
+            async function analyzePrompt(prompt, includeAll = false) {
+                const response = await fetch('/api/llm/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt, include_all: includeAll })
+                });
+                return await response.json();
+            }
+            
+            async function generateTags(prompt, title = '') {
+                const response = await fetch('/api/llm/generate-tags', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt, title })
+                });
+                return await response.json();
+            }
+            
+            async function checkLLMAvailable() {
+                try {
+                    const response = await fetch('/api/llm/models');
+                    return response.ok;
+                } catch {
+                    return false;
+                }
+            }
+            
             // UI functions
             function renderResults(data) {
                 const resultsDiv = document.getElementById('results');
@@ -444,6 +514,7 @@ async def read_root():
                         <div class="result-meta">
                             ${item.category}${item.subcategory ? ` > ${item.subcategory}` : ''}
                             ${item.version ? ` (v${item.version})` : ''}
+                            <span id="llm-buttons-${item.id}"></span>
                         </div>
                         <div class="result-description">${escapeHtml(item.description)}</div>
                         <div class="result-tags">
@@ -453,6 +524,144 @@ async def read_root():
                 `).join('');
                 
                 resultsDiv.innerHTML = html;
+                
+                // Add LLM buttons if available
+                addLLMButtons(data.items);
+            }
+            
+            async function addLLMButtons(items) {
+                const llmAvailable = await checkLLMAvailable();
+                if (!llmAvailable) return;
+                
+                items.forEach(item => {
+                    const buttonContainer = document.getElementById(`llm-buttons-${item.id}`);
+                    if (buttonContainer) {
+                        buttonContainer.innerHTML = `
+                            <button class="llm-btn" onclick="showLLMEnhancement('${item.id}', '${escapeHtml(item.title)}', '${escapeHtml(item.content).substring(0, 500)}')">
+                                🤖 Enhance
+                            </button>
+                        `;
+                    }
+                });
+            }
+            
+            function showLLMEnhancement(itemId, title, content) {
+                const modal = document.getElementById('llmModal');
+                const modalContent = document.getElementById('llmContent');
+                
+                modalContent.innerHTML = `
+                    <h4>Enhancing: ${title}</h4>
+                    <div class="llm-section">
+                        <button onclick="performLLMAction('${itemId}', '${escapeHtml(content)}', 'analyze')" class="llm-btn">
+                            🔍 Analyze Prompt
+                        </button>
+                        <button onclick="performLLMAction('${itemId}', '${escapeHtml(content)}', 'improve')" class="llm-btn">
+                            ✨ Improve
+                        </button>
+                        <button onclick="performLLMAction('${itemId}', '${escapeHtml(content)}', 'variants')" class="llm-btn">
+                            🔄 Create Variants
+                        </button>
+                        <button onclick="performLLMAction('${itemId}', '${escapeHtml(content)}', 'tags')" class="llm-btn">
+                            🏷️ Generate Tags
+                        </button>
+                    </div>
+                    <div id="llm-results-${itemId}"></div>
+                `;
+                
+                modal.style.display = 'block';
+            }
+            
+            async function performLLMAction(itemId, content, action) {
+                const resultsDiv = document.getElementById(`llm-results-${itemId}`);
+                resultsDiv.innerHTML = '<div class="loading">🤖 AI is working...</div>';
+                
+                try {
+                    let result;
+                    
+                    switch(action) {
+                        case 'analyze':
+                            result = await analyzePrompt(content, true);
+                            displayAnalysisResult(resultsDiv, result);
+                            break;
+                        case 'improve':
+                            result = await enhancePrompt(content, 'improve');
+                            displayEnhancementResult(resultsDiv, result);
+                            break;
+                        case 'variants':
+                            result = await enhancePrompt(content, 'variants');
+                            displayEnhancementResult(resultsDiv, result);
+                            break;
+                        case 'tags':
+                            result = await generateTags(content);
+                            displayTagsResult(resultsDiv, result);
+                            break;
+                    }
+                } catch (error) {
+                    resultsDiv.innerHTML = `<div class="llm-result">❌ Error: ${error.message}</div>`;
+                }
+            }
+            
+            function displayAnalysisResult(container, result) {
+                let html = '<div class="llm-section"><h5>🔍 AI Analysis Results:</h5>';
+                
+                if (result.enhancement) {
+                    html += `<div class="llm-result"><strong>Enhancement Suggestions:</strong><br>${result.enhancement.enhanced_content}</div>`;
+                }
+                
+                if (result.suggested_tags) {
+                    html += `<div class="llm-result"><strong>Suggested Tags:</strong><br>${result.suggested_tags.join(', ')}</div>`;
+                }
+                
+                if (result.detected_type) {
+                    html += `<div class="llm-result"><strong>Detected Type:</strong> ${result.detected_type}</div>`;
+                }
+                
+                if (result.use_cases) {
+                    html += `<div class="llm-result"><strong>Use Cases:</strong><br>• ${result.use_cases.join('<br>• ')}</div>`;
+                }
+                
+                html += '</div>';
+                container.innerHTML = html;
+            }
+            
+            function displayEnhancementResult(container, result) {
+                if (result && result.enhanced_content) {
+                    container.innerHTML = `
+                        <div class="llm-section">
+                            <h5>✨ Enhanced Version:</h5>
+                            <div class="llm-result">${result.enhanced_content}</div>
+                            <small>Generated by: ${result.model_used}</small>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = '<div class="llm-result">❌ Enhancement failed</div>';
+                }
+            }
+            
+            function displayTagsResult(container, result) {
+                if (result && result.tags) {
+                    const tagsHtml = result.tags.map(tag => `<span class="tag">${tag}</span>`).join(' ');
+                    container.innerHTML = `
+                        <div class="llm-section">
+                            <h5>🏷️ Generated Tags:</h5>
+                            <div class="llm-result">${tagsHtml}</div>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = '<div class="llm-result">❌ Tag generation failed</div>';
+                }
+            }
+            
+            function closeLLMModal() {
+                document.getElementById('llmModal').style.display = 'none';
+            }
+            
+            // Close modal when clicking outside
+            window.onclick = function(event) {
+                const modal = document.getElementById('llmModal');
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
             }
             
             function escapeHtml(text) {
@@ -601,6 +810,119 @@ async def semantic_search_endpoint(
         "query": query,
         "results": [{"similarity": score, "item": item.dict()} for score, item in results]
     }
+
+# LLM Enhancement Endpoints
+@app.get("/api/llm/models")
+async def get_llm_models():
+    """Get available LLM models"""
+    if not index_manager.llm_connector:
+        raise HTTPException(status_code=501, detail="LLM connector not available")
+    
+    return index_manager.llm_connector.get_available_models()
+
+@app.post("/api/llm/enhance")
+async def enhance_prompt_endpoint(
+    request: dict
+):
+    """Enhance a prompt using LLM"""
+    if not index_manager.llm_connector:
+        raise HTTPException(status_code=501, detail="LLM connector not available")
+    
+    prompt_content = request.get("prompt", "")
+    enhancement_type = request.get("type", "improve")
+    
+    if not prompt_content:
+        raise HTTPException(status_code=400, detail="Prompt content required")
+    
+    result = await index_manager.llm_connector.enhance_prompt(prompt_content, enhancement_type)
+    if result:
+        return result
+    else:
+        raise HTTPException(status_code=500, detail="Enhancement failed")
+
+@app.post("/api/llm/analyze")
+async def analyze_prompt_endpoint(
+    request: dict
+):
+    """Analyze a prompt comprehensively"""
+    if not index_manager.llm_connector:
+        raise HTTPException(status_code=501, detail="LLM connector not available")
+    
+    prompt_content = request.get("prompt", "")
+    include_all = request.get("include_all", False)
+    
+    if not prompt_content:
+        raise HTTPException(status_code=400, detail="Prompt content required")
+    
+    result = await enhance_prompt_workflow(index_manager.llm_connector, prompt_content, include_all)
+    return result
+
+@app.post("/api/llm/generate-tags")
+async def generate_tags_endpoint(
+    request: dict
+):
+    """Generate tags for a prompt"""
+    if not index_manager.llm_connector:
+        raise HTTPException(status_code=501, detail="LLM connector not available")
+    
+    prompt_content = request.get("prompt", "")
+    title = request.get("title", "")
+    
+    if not prompt_content:
+        raise HTTPException(status_code=400, detail="Prompt content required")
+    
+    tags = await index_manager.llm_connector.generate_tags(prompt_content, title)
+    return {"tags": tags or []}
+
+@app.post("/api/llm/summarize")
+async def summarize_prompt_endpoint(
+    request: dict
+):
+    """Summarize a prompt"""
+    if not index_manager.llm_connector:
+        raise HTTPException(status_code=501, detail="LLM connector not available")
+    
+    prompt_content = request.get("prompt", "")
+    max_length = request.get("max_length", 200)
+    
+    if not prompt_content:
+        raise HTTPException(status_code=400, detail="Prompt content required")
+    
+    summary = await index_manager.llm_connector.summarize_prompt(prompt_content, max_length)
+    return {"summary": summary or ""}
+
+@app.post("/api/llm/compare")
+async def compare_prompts_endpoint(
+    request: dict
+):
+    """Compare two prompts"""
+    if not index_manager.llm_connector:
+        raise HTTPException(status_code=501, detail="LLM connector not available")
+    
+    prompt1 = request.get("prompt1", "")
+    prompt2 = request.get("prompt2", "")
+    
+    if not prompt1 or not prompt2:
+        raise HTTPException(status_code=400, detail="Both prompts required")
+    
+    comparison = await index_manager.llm_connector.compare_prompts(prompt1, prompt2)
+    return {"comparison": comparison or ""}
+
+@app.post("/api/llm/use-cases")
+async def suggest_use_cases_endpoint(
+    request: dict
+):
+    """Suggest use cases for a prompt"""
+    if not index_manager.llm_connector:
+        raise HTTPException(status_code=501, detail="LLM connector not available")
+    
+    prompt_content = request.get("prompt", "")
+    
+    if not prompt_content:
+        raise HTTPException(status_code=400, detail="Prompt content required")
+    
+    use_cases = await index_manager.llm_connector.suggest_use_cases(prompt_content)
+    return {"use_cases": use_cases or []}
 
 if __name__ == "__main__":
     import uvicorn
