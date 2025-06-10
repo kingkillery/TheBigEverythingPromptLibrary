@@ -1,0 +1,67 @@
+# Docker ignore file for The Big Everything Prompt Library
+
+# Version control
+.git
+.gitignore
+
+# Python cache and compiled files
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache
+*.egg-info
+
+# Virtual environments
+venv/
+env/
+.env
+.venv
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Log files
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Docker files (don't copy these into the container)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Documentation that's not needed in container
+*.md
+!web_interface/README.md
+!web_interface/SEARCH_GUIDE.md
+
+# Large model files that will be downloaded fresh
+web_interface/backend/embeddings_cache/*.npz
+web_interface/backend/embeddings_cache/*.json
+
+# Development and build artifacts
+build/
+dist/
+.coverage
+.tox/
+.pytest_cache/

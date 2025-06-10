@@ -128,24 +128,31 @@ async def test_api_endpoints():
 
 def main():
     """Main test function"""
+    import sys
+    
+    # Check if quick mode (for Docker)
+    quick_mode = '--quick' in sys.argv
+    
     print("🧪 Testing Enhanced Prompt Library Search")
     print("=" * 60)
     
     # Test the core search functionality
     test_enhanced_search()
     
-    # Test API if possible
-    try:
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(test_api_endpoints())
-    except Exception as e:
-        print(f"API test skipped: {e}")
+    # Test API if possible (skip in quick mode)
+    if not quick_mode:
+        try:
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(test_api_endpoints())
+        except Exception as e:
+            print(f"API test skipped: {e}")
     
     print("\n🎉 All tests completed!")
-    print("\nTo start the web interface:")
-    print("   cd web_interface")
-    print("   python start_server.py")
-    print("   Open: http://localhost:8000")
+    if not quick_mode:
+        print("\nTo start the web interface:")
+        print("   cd web_interface")
+        print("   python start_server.py")
+        print("   Open: http://localhost:8000")
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,57 @@
+version: '3.8'
+
+# Development environment with live reload and debugging
+services:
+  prompt-library-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: prompt-library-dev
+    ports:
+      - "8000:8000"
+      - "8001:8001"  # Debug port
+    volumes:
+      # Mount source code for live reload
+      - .:/app
+      - /app/.git  # Exclude .git folder
+      - prompt-dev-cache:/app/.cache
+    environment:
+      - PYTHONPATH=/app/.scripts:/app/web_interface/backend
+      - TORCH_HOME=/app/.cache/torch
+      - HF_HOME=/app/.cache/huggingface
+      - TRANSFORMERS_CACHE=/app/.cache/huggingface
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - DEBUG=true
+    command: python -m uvicorn web_interface.backend.app:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/categories"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Development file browser with write access
+  file-browser-dev:
+    image: filebrowser/filebrowser:latest
+    container_name: prompt-library-files-dev
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/srv  # Full read-write access for development
+      - filebrowser-dev-db:/database
+    environment:
+      - FB_BASEURL=/files
+    restart: unless-stopped
+
+volumes:
+  prompt-dev-cache:
+    driver: local
+  filebrowser-dev-db:
+    driver: local
+
+networks:
+  default:
+    name: prompt-library-dev-network

@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  prompt-library:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: prompt-library-web
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount the repository as read-only to access all prompts
+      - .:/app:ro
+      # Separate writable volume for cache and embeddings
+      - prompt-cache:/app/web_interface/backend/embeddings_cache
+      - model-cache:/app/.cache
+    environment:
+      - PYTHONPATH=/app/.scripts:/app/web_interface/backend
+      - TORCH_HOME=/app/.cache/torch
+      - HF_HOME=/app/.cache/huggingface
+      - TRANSFORMERS_CACHE=/app/.cache/huggingface
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/categories"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prompt-library.rule=Host(`localhost`)"
+      - "traefik.http.services.prompt-library.loadbalancer.server.port=8000"
+
+  # Optional: Add a simple file browser for exploring the repository
+  file-browser:
+    image: filebrowser/filebrowser:latest
+    container_name: prompt-library-files
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/srv:ro
+      - filebrowser-db:/database
+    environment:
+      - FB_BASEURL=/files
+    restart: unless-stopped
+    profiles:
+      - tools
+
+  # Optional: Add a simple nginx proxy for better performance
+  nginx:
+    image: nginx:alpine
+    container_name: prompt-library-proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - prompt-library
+    restart: unless-stopped
+    profiles:
+      - production
+
+volumes:
+  prompt-cache:
+    driver: local
+  model-cache:
+    driver: local
+  filebrowser-db:
+    driver: local
+
+networks:
+  default:
+    name: prompt-library-network
