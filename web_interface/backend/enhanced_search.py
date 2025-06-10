@@ -4,7 +4,7 @@ Enhanced Search Engine with Quality Scoring and Advanced Filtering
 
 import re
 import math
-from typing import List, Dict, Optional, Tuple, Set
+from typing import List, Dict, Optional, Tuple, Set, Any
 from collections import Counter
 from fuzzywuzzy import fuzz
 import numpy as np
@@ -97,13 +97,27 @@ class QualityScorer:
 class EnhancedSearchEngine:
     """Enhanced search with fuzzy matching, quality scoring, and advanced filtering"""
     
-    def __init__(self):
+    def __init__(self, config: Optional[dict] = None):
         self.quality_scorer = QualityScorer()
+        # Default stop words; can be overridden via config
         self.stop_words = {
-            'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
-            'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 
+            'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+            'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have',
             'has', 'had', 'do', 'does', 'did', 'will', 'would', 'should', 'could'
         }
+        # Default scoring weights; can be overridden via config
+        self.weights = {
+            'quality': 0.25,
+            'title': 0.30,
+            'description': 0.15,
+            'content': 0.10,
+            'tags': 0.10,
+            'semantic': 0.08,
+            'category': 0.02
+        }
+        # Apply incoming config if provided
+        if config:
+            self.update_config(config)
     
     def extract_keywords(self, text: str) -> List[str]:
         """Extract meaningful keywords from text"""
@@ -189,17 +203,7 @@ class EnhancedSearchEngine:
         scores['category'] = category_score
         
         # Weighted final score
-        weights = {
-            'quality': 0.25,      # 25% quality
-            'title': 0.30,        # 30% title match
-            'description': 0.15,  # 15% description match
-            'content': 0.10,      # 10% content match
-            'tags': 0.10,         # 10% tag match
-            'semantic': 0.08,     # 8% semantic relevance
-            'category': 0.02      # 2% category bonus
-        }
-        
-        final_score = sum(scores[key] * weights[key] for key in weights)
+        final_score = sum(scores[key] * self.weights[key] for key in self.weights)
         
         return final_score, scores
     
@@ -353,7 +357,51 @@ class EnhancedSearchEngine:
             analysis['recommendations'].append("Remove some filters")
         
         return analysis
+    
+    def update_config(self, config: Dict[str, Any]):
+        """Update stop words and scoring weights at runtime."""
+        if 'stop_words' in config and isinstance(config['stop_words'], (list, set)):
+            self.stop_words = set(config['stop_words'])
+        if 'weights' in config and isinstance(config['weights'], dict):
+            for k, v in config['weights'].items():
+                if k in self.weights:
+                    self.weights[k] = float(v)
 
-def create_enhanced_search_engine():
+    def get_config(self) -> Dict[str, Any]:
+        """Return current search configuration."""
+        return {'stop_words': list(self.stop_words), 'weights': self.weights}
+    
+    def advanced_search_details(self, items: List, query: str = "",
+                                min_quality: float = 0.0, max_results: int = 50,
+                                category_filter: str = "", tag_filter: List[str] = None,
+                                sort_by: str = "relevance") -> Tuple[List[Dict], Dict]:
+        """
+        Same as advanced_search but returns per-item score breakdown.
+        """
+        if tag_filter is None:
+            tag_filter = []
+
+        results, stats = self.advanced_search(
+            items=items,
+            query=query,
+            min_quality=min_quality,
+            max_results=max_results,
+            category_filter=category_filter,
+            tag_filter=tag_filter,
+            sort_by=sort_by
+        )
+
+        query_keywords = self.extract_keywords(query) if query else []
+        details = []
+        for item in results:
+            final_score, breakdown = self.calculate_comprehensive_score(item, query, query_keywords)
+            details.append({
+                "item": item,
+                "score": final_score,
+                "breakdown": breakdown
+            })
+        return details, stats
+
+def create_enhanced_search_engine(config: Optional[dict] = None):
     """Factory function to create enhanced search engine"""
-    return EnhancedSearchEngine()
+    return EnhancedSearchEngine(config)

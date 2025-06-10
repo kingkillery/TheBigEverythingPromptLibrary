@@ -77,6 +77,10 @@ class SearchResponse(BaseModel):
     query: str
     filters: Dict[str, Any]
 
+class ConfigUpdate(BaseModel):
+    stop_words: Optional[List[str]] = None
+    weights: Optional[Dict[str, float]] = None
+
 class IndexManager:
     """Manages the search index for all prompt content"""
     
@@ -897,6 +901,89 @@ async def read_root():
     </html>
     """
     return HTMLResponse(content=html_content)
+
+@app.get("/api/ping")
+async def ping():
+    """Health check and version info"""
+    return {
+        "status": "ok",
+        "version": app.version,
+        "items_indexed": len(index_manager.index)
+    }
+
+# ---------------------- Search Configuration Endpoints ----------------------
+
+@app.get("/api/search/config")
+async def get_search_config():
+    """Get current search configuration (stop words & weights)"""
+    if not index_manager.enhanced_search:
+        raise HTTPException(status_code=501, detail="Enhanced search not available")
+    return index_manager.enhanced_search.get_config()
+
+@app.post("/api/search/config")
+async def update_search_config(config: ConfigUpdate):
+    """Update search configuration at runtime"""
+    if not index_manager.enhanced_search:
+        raise HTTPException(status_code=501, detail="Enhanced search not available")
+    cfg_dict: Dict[str, Any] = {}
+    if config.stop_words is not None:
+        cfg_dict['stop_words'] = config.stop_words
+    if config.weights is not None:
+        cfg_dict['weights'] = config.weights
+    if not cfg_dict:
+        raise HTTPException(status_code=400, detail="No valid configuration fields provided")
+    index_manager.enhanced_search.update_config(cfg_dict)
+    return {"status": "updated", "config": index_manager.enhanced_search.get_config()}
+
+# ---------------------- Detailed Search Endpoint ---------------------------
+
+@app.get("/api/search/details")
+async def search_prompts_details(
+    query: str = Query("", description="Search query"),
+    category: str = Query("", description="Filter by category"),
+    tags: str = Query("", description="Comma-separated tags"),
+    limit: int = Query(50, description="Number of results per page"),
+    offset: int = Query(0, description="Offset for pagination"),
+    min_quality: float = Query(0.0, description="Minimum quality score (0.0-1.0)"),
+    sort_by: str = Query("relevance", description="Sort by: relevance, quality, title, newest")
+):
+    """Search that returns per-item score breakdown for transparency"""
+    tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()] if tags else []
+
+    if not index_manager.enhanced_search:
+        raise HTTPException(status_code=501, detail="Enhanced search not available")
+
+    # We cannot apply offset easily on detailed results after breakdown; so request larger result set then slice
+    details, stats = index_manager.enhanced_search.advanced_search_details(
+        items=index_manager.index,
+        query=query,
+        min_quality=min_quality,
+        max_results=limit + offset,
+        category_filter=category,
+        tag_filter=tag_list,
+        sort_by=sort_by
+    )
+    total = stats.get('total_found', len(details))
+    paginated_details = details[offset:offset + limit]
+
+    # Convert Pydantic PromptItem into dict to ensure JSON serialisable
+    serialised = [
+        {
+            **{
+                "item": d["item"].dict(),
+                "score": d["score"],
+                "breakdown": d["breakdown"]
+            }
+        } for d in paginated_details
+    ]
+
+    return {
+        "details": serialised,
+        "total": total,
+        "query": query,
+        "filters": {"category": category, "tags": tag_list, "min_quality": min_quality, "sort_by": sort_by},
+        "search_stats": stats
+    }
 
 @app.get("/api/search", response_model=SearchResponse)
 async def search_prompts(
