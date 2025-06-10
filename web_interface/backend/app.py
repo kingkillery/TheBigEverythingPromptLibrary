@@ -23,6 +23,14 @@ sys.path.append(str(REPO_ROOT / ".scripts"))
 
 import gptparser
 
+# Optional semantic search
+try:
+    from semantic_search import create_semantic_search_engine
+    SEMANTIC_SEARCH_AVAILABLE = True
+except ImportError:
+    SEMANTIC_SEARCH_AVAILABLE = False
+    print("Semantic search not available. Install with: pip install sentence-transformers numpy")
+
 app = FastAPI(title="Prompt Library API", version="1.0.0")
 
 # Configure CORS
@@ -60,6 +68,7 @@ class IndexManager:
         self.repo_root = REPO_ROOT
         self.index: List[PromptItem] = []
         self.last_updated = None
+        self.semantic_search = None
         self.build_index()
     
     def get_file_content(self, file_path: Path) -> str:
@@ -226,6 +235,16 @@ class IndexManager:
         
         self.last_updated = datetime.now()
         print(f"Index built with {len(self.index)} items")
+        
+        # Initialize semantic search if available
+        if SEMANTIC_SEARCH_AVAILABLE:
+            try:
+                self.semantic_search = create_semantic_search_engine()
+                if self.semantic_search:
+                    self.semantic_search.build_embeddings(self.index)
+            except Exception as e:
+                print(f"Could not initialize semantic search: {e}")
+                self.semantic_search = None
     
     def search(self, query: str = "", category: str = "", tags: List[str] = None, 
                limit: int = 50, offset: int = 0) -> SearchResponse:
@@ -246,35 +265,13 @@ class IndexManager:
         
         # Search by query
         if query:
-            query_lower = query.lower()
-            scored_results = []
-            
-            for item in results:
-                score = 0
-                
-                # Title match (highest weight)
-                if query_lower in item.title.lower():
-                    score += 10
-                
-                # Description match
-                if query_lower in item.description.lower():
-                    score += 5
-                
-                # Content match
-                if query_lower in item.content.lower():
-                    score += 1
-                
-                # Tag match
-                for tag in item.tags:
-                    if query_lower in tag.lower():
-                        score += 3
-                
-                if score > 0:
-                    scored_results.append((score, item))
-            
-            # Sort by score and extract items
-            scored_results.sort(key=lambda x: x[0], reverse=True)
-            results = [item for score, item in scored_results]
+            if self.semantic_search and len(query.split()) > 1:
+                # Use hybrid search for multi-word queries
+                keyword_results = self._keyword_search(results, query)
+                results = self.semantic_search.hybrid_search(query, keyword_results)
+            else:
+                # Use keyword search for single words or when semantic search unavailable
+                results = self._keyword_search(results, query)
         
         # Apply pagination
         total = len(results)
@@ -286,6 +283,38 @@ class IndexManager:
             query=query,
             filters={"category": category, "tags": tags}
         )
+    
+    def _keyword_search(self, items: List[PromptItem], query: str) -> List[PromptItem]:
+        """Perform keyword-based search"""
+        query_lower = query.lower()
+        scored_results = []
+        
+        for item in items:
+            score = 0
+            
+            # Title match (highest weight)
+            if query_lower in item.title.lower():
+                score += 10
+            
+            # Description match
+            if query_lower in item.description.lower():
+                score += 5
+            
+            # Content match
+            if query_lower in item.content.lower():
+                score += 1
+            
+            # Tag match
+            for tag in item.tags:
+                if query_lower in tag.lower():
+                    score += 3
+            
+            if score > 0:
+                scored_results.append((score, item))
+        
+        # Sort by score and extract items
+        scored_results.sort(key=lambda x: x[0], reverse=True)
+        return [item for score, item in scored_results]
     
     def get_categories(self) -> Dict[str, int]:
         """Get all categories with counts"""
@@ -545,6 +574,33 @@ async def get_item(item_id: str):
             return {**item.dict(), "full_content": full_content}
     
     raise HTTPException(status_code=404, detail="Item not found")
+
+@app.get("/api/similar/{item_id}")
+async def get_similar_items(item_id: str, limit: int = Query(10, description="Number of similar items")):
+    """Get items similar to the specified item (requires semantic search)"""
+    if not index_manager.semantic_search:
+        raise HTTPException(status_code=501, detail="Semantic search not available")
+    
+    similar_items = index_manager.semantic_search.find_similar(item_id, limit)
+    return {
+        "item_id": item_id,
+        "similar_items": [{"similarity": score, "item": item.dict()} for score, item in similar_items]
+    }
+
+@app.get("/api/semantic-search")
+async def semantic_search_endpoint(
+    query: str = Query(..., description="Search query"),
+    limit: int = Query(20, description="Number of results")
+):
+    """Pure semantic search endpoint"""
+    if not index_manager.semantic_search:
+        raise HTTPException(status_code=501, detail="Semantic search not available")
+    
+    results = index_manager.semantic_search.semantic_search(query, limit)
+    return {
+        "query": query,
+        "results": [{"similarity": score, "item": item.dict()} for score, item in results]
+    }
 
 if __name__ == "__main__":
     import uvicorn
