@@ -4,6 +4,10 @@ Comprehensive guides for AI tools, prompting techniques, and development workflo
 
 ## Available Guides
 
+### Prompt Engineering
+- **[Advanced Prompt Engineering Techniques](./06092025-advanced-prompt-engineering-techniques.md)** - Cutting-edge prompt engineering techniques including Chain-of-Thought, reasoning patterns, and advanced AI interaction methods developed through 2024-2025
+- **[Comprehensive Prompt Repository Integration Guide](./06092025-comprehensive-prompt-repository-integration-guide.md)** - Research-based guide covering top prompt repositories, integration strategies, and community resources for expanding prompt libraries
+
 ### GPT Models
 - **[GPT-4.1 Prompting Guide](./06082025-gpt4.1-prompting-guide.md)** - Official OpenAI guide for GPT-4.1 family models with improved instruction following, agentic capabilities, and long context performance (1M tokens)
 
@@ -19,17 +23,19 @@ Comprehensive guides for AI tools, prompting techniques, and development workflo
 ## Guide Categories
 
 ### By Complexity
-- **Beginner**: GPT-4.1 Prompting Guide
-- **Intermediate**: Claude Tool Use Guide, Cursor AI Guide  
+- **Beginner**: GPT-4.1 Prompting Guide, Prompt Repository Integration Guide
+- **Intermediate**: Advanced Prompt Engineering Techniques, Claude Tool Use Guide, Cursor AI Guide  
 - **Advanced**: Multi-Tool Orchestration with RAG
 
 ### By Use Case
-- **Prompting**: GPT-4.1 Guide
+- **Prompting**: Advanced Prompt Engineering Techniques, GPT-4.1 Guide
+- **Repository Management**: Prompt Repository Integration Guide
 - **API Integration**: Claude Tool Use, Multi-Tool Orchestration
 - **Development Workflow**: Cursor AI Guide
 - **Data Retrieval**: RAG Guide
 
 ### By Platform
+- **Cross-Platform**: Advanced Prompt Engineering Techniques, Prompt Repository Integration Guide
 - **OpenAI**: GPT-4.1 Guide, Multi-Tool Orchestration
 - **Anthropic**: Claude Tool Use Guide
 - **Cursor**: Cursor AI Configuration Guide
