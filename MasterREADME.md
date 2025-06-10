@@ -104,9 +104,7 @@
 - **[Email Writer GPT](./CustomInstructions/ChatGPT/BWA810CFR_AI_Email_Writer_GPT.md)** - Professional communication
 
 ### Other Platforms
-- **[Google Gemini Gems (5 files)](./CustomInstructions/Gemini/)** - Gemini-specific instructions
-- **[Gab.ai Characters (8 files)](./CustomInstructions/Gab.ai/)** - Character personalities
-- **[Gaming GPTs](./CustomInstructions/Games/)** - Game-specific custom instructions
+- **[Complete Custom Instructions Collection](./CustomInstructions/)** - Ready-to-use configurations across all platforms
 
 [📁 **Complete Custom Instructions Collection**](./CustomInstructions/) - **1,669 files** covering every imaginable use case.
 
@@ -229,11 +227,11 @@ Got a prompt that consistently delivers great results? We welcome contributions!
 ### 🔗 Quick Links
 - [Main README](./README.md) - Project overview
 - [.scripts/](./.scripts/) - Repository management tools
-- [GitHub Issues](https://github.com/kingkillery/TheBigPromptLibrary/issues) - Report problems or request features
-- [GitHub Discussions](https://github.com/kingkillery/TheBigPromptLibrary/discussions) - Community discussions
+- [GitHub Repository](https://github.com/kingkillery/TheBigEverythingPromptLibrary) - Main repository
+- [Issues & Features](https://github.com/kingkillery/TheBigEverythingPromptLibrary/issues) - Report problems or request features
 
 ---
 
 *🌟 Happy prompting! This repository represents the collective knowledge of the AI prompting community.*
 
-[![Star History Chart](https://api.star-history.com/svg?repos=kingkillery/TheBigPromptLibrary&type=Date)](https://star-history.com/#kingkillery/TheBigPromptLibrary&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=kingkillery/TheBigEverythingPromptLibrary&type=Date)](https://star-history.com/#kingkillery/TheBigEverythingPromptLibrary&Date)
