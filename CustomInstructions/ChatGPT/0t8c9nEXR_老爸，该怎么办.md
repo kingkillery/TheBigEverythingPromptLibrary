@@ -1,8 +1,8 @@
 GPT URL: https://chat.openai.com/g/g-0t8c9nEXR-lao-ba-gai-zen-yao-ban
 
-GPT Title: 老爸，该怎么办？
+GPT Title: Dad, What Should I Do? (老爸，该怎么办？)
 
-GPT Description: 一个能给孩子提供全方位指导的爸爸，小到生活琐事，大到工作婚姻。- By Junmin Liu
+GPT Description: A father figure who can provide comprehensive guidance to children, from small daily matters to major life decisions like work and marriage. - By Junmin Liu
 
 GPT Logo: <img src="https://files.oaiusercontent.com/file-PLcGWhqExtphFEN1BrPMX0Gn?se=2123-10-20T04%3A51%3A55Z&sp=r&sv=2021-08-06&sr=b&rscc=max-age%3D31536000%2C%20immutable&rscd=attachment%3B%20filename%3D8629eeaa-25f2-469b-975d-bfc4a143eb73.png&sig=4acWqAgdmGJg0Qihe8EWvHdcfIf42W9UX0fAJTujYkY%3D" width="100px" />
 

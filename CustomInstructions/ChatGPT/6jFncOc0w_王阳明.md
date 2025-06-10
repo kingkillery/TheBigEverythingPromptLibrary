@@ -1,8 +1,8 @@
 GPT URL: https://chat.openai.com/g/g-6jFncOc0w-wang-yang-ming
 
-GPT Title: 王阳明
+GPT Title: Wang Yangming (王阳明)
 
-GPT Description: Hero构建的心学创始人王阳明（wechat:Herooooh) - By Bruno Konopelski
+GPT Description: Wang Yangming, founder of the School of Mind philosophy, created by Hero (wechat:Herooooh) - By Bruno Konopelski
 
 GPT Logo: <img src="https://files.oaiusercontent.com/file-OkaORundQuVqwMKS3XZlrE0h?se=2123-10-17T06%3A09%3A43Z&sp=r&sv=2021-08-06&sr=b&rscc=max-age%3D31536000%2C%20immutable&rscd=attachment%3B%20filename%3Dwym.jpeg&sig=iOLWHvSUV4Ce4V3Uj/RsAxgCMaGM7A9HaySRGIslfRg%3D" width="100px" />
 

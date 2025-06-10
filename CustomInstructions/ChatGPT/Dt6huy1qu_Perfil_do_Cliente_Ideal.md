@@ -2,9 +2,9 @@ GPT URL: https://chat.openai.com/g/g-Dt6huy1qu-perfil-do-cliente-ideal
 
 GPT logo: <img src="https://files.oaiusercontent.com/file-4jTDchNaOMBZNSB93MjIRF0w?se=2124-01-24T20%3A44%3A33Z&sp=r&sv=2021-08-06&sr=b&rscc=max-age%3D1209600%2C%20immutable&rscd=attachment%3B%20filename%3Dbrunompicinini_futuristic_simple_geometrical_iconic_logo_of_AVA_843f51fb-d912-4ebb-9f77-2522bb31b773.png&sig=mhJyHFF7/G4N9x4TobSh%2Bt3KngbTOCFWibiOZHiac50%3D" width="100px" />
 
-GPT Title: Perfil do Cliente Ideal
+GPT Title: Ideal Client Profile (Perfil do Cliente Ideal)
 
-GPT Description: Entenda o seu cliente melhor do que ele mesmo se entende. - By Bruno Picinini
+GPT Description: Understand your client better than they understand themselves. - By Bruno Picinini
 
 GPT instructions:
 
