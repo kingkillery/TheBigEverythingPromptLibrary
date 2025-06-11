@@ -95,6 +95,10 @@ class ChatResponse(BaseModel):
     optimized_prompt: str
     tweaked_match: str
 
+# --- New model for setting API key ---
+class ApiKeyRequest(BaseModel):
+    api_key: str
+
 class IndexManager:
     """Manages the search index for all prompt content"""
     
@@ -778,6 +782,23 @@ async def chat_process(request: ChatRequest):
         optimized_prompt=optimized_prompt,
         tweaked_match=tweaked_match,
     )
+
+# ---------------------- LLM API Key Endpoint -----------------------------
+
+@app.post("/api/llm/set-key")
+async def set_llm_api_key(request: ApiKeyRequest):
+    """Set or update the OpenRouter API key at runtime"""
+    new_key = request.api_key.strip()
+    if not new_key:
+        raise HTTPException(status_code=400, detail="API key is required")
+
+    # Re-create connector with new key
+    connector = create_llm_connector(new_key)
+    if connector is None:
+        raise HTTPException(status_code=500, detail="Failed to initialise LLM connector with provided key")
+
+    index_manager.llm_connector = connector
+    return {"status": "success", "message": "API key updated and LLM connector initialised"}
 
 if __name__ == "__main__":
     import uvicorn
