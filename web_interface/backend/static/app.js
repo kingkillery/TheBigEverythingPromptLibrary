@@ -14,6 +14,46 @@ async function populateCategories() {
     opt.textContent = `${cat} (${count})`;
     sel.appendChild(opt);
   });
+  renderCategoryGrid(cats);
+}
+
+// Render dynamic category grid cards
+function renderCategoryGrid(cats) {
+  const grid = document.getElementById("categoryGrid");
+  if (!grid) return;
+  grid.innerHTML = "";
+
+  // Tailwind pastel background palette
+  const colors = [
+    "from-rose-400 to-fuchsia-500",
+    "from-orange-400 to-amber-500",
+    "from-emerald-400 to-teal-500",
+    "from-sky-400 to-indigo-500",
+    "from-violet-400 to-purple-500",
+    "from-lime-400 to-green-500",
+    "from-pink-400 to-rose-500",
+    "from-cyan-400 to-blue-500",
+  ];
+
+  let i = 0;
+  Object.entries(cats)
+    .sort((a, b) => b[1] - a[1]) // larger categories first
+    .forEach(([cat, count]) => {
+      const card = document.createElement("div");
+      const color = colors[i % colors.length];
+      i += 1;
+      card.className = `group p-4 rounded-xl shadow-lg border border-transparent cursor-pointer bg-gradient-to-br ${color} text-white hover:shadow-2xl transform hover:-translate-y-1 transition`;
+      card.innerHTML = `
+        <h3 class="font-semibold text-lg mb-1 drop-shadow-sm">${cat}</h3>
+        <p class="text-sm opacity-90">${count} prompts</p>`;
+      card.addEventListener("click", () => {
+        document.getElementById("categoryFilter").value = cat;
+        // Scroll to search section
+        document.getElementById("searchInput").scrollIntoView({ behavior: "smooth", block: "center" });
+        search();
+      });
+      grid.appendChild(card);
+    });
 }
 
 async function search() {
@@ -47,6 +87,13 @@ document.getElementById("categoryFilter").addEventListener("change", search);
 
 (async function init() {
   await populateCategories();
+  // Fetch total count quick via search API once
+  try {
+    const data = await fetchJSON("/api/search?limit=1");
+    const total = data.total || 0;
+    const pc = document.getElementById("promptCount");
+    if (pc) pc.textContent = total.toLocaleString();
+  } catch {}
   search();
 })();
 

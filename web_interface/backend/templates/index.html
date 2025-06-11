@@ -10,8 +10,8 @@
   <body class="bg-gray-50 text-gray-900">
     <div class="max-w-5xl mx-auto p-4">
       <header class="mb-8 text-center">
-        <h1 class="text-3xl font-bold mb-2">🚀 The Big Everything Prompt Library</h1>
-        <p class="text-gray-600">Search 1,800+ high-quality prompts, guides, and AI resources</p>
+        <h1 class="text-4xl font-extrabold bg-gradient-to-r from-indigo-600 via-fuchsia-500 to-rose-500 bg-clip-text text-transparent mb-3 drop-shadow-lg">🚀 The Big Everything Prompt Library</h1>
+        <p class="text-gray-700 text-lg">Discover and remix <span id="promptCount" class="font-semibold">1,800+</span> expertly-crafted AI prompts</p>
       </header>
 
       <section class="mb-6 flex flex-col sm:flex-row gap-4">
@@ -59,6 +59,12 @@
 
       <!-- Chat output -->
       <div id="chatOutput" class="space-y-4 mb-8"></div>
+
+      <!-- ✨ Explore by Category - new grid section -->
+      <section id="categorySection" class="mb-10">
+        <h2 class="text-2xl font-bold mb-4 text-gray-800">Browse by Category</h2>
+        <div id="categoryGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+      </section>
 
       <div id="stats" class="text-sm text-gray-600 mb-4"></div>
       <div id="results" class="space-y-4"></div>
