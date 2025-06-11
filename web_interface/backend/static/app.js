@@ -1258,3 +1258,30 @@ function showBedModal() {
     });
   });
 }
+
+// === AI News ===
+async function loadAiNews() {
+  try {
+    const data = await fetchJSON('/api/ai-news?limit=15');
+    renderAiNews(data.items || []);
+  } catch (e) { console.log('AI news error', e); }
+}
+
+function renderAiNews(items) {
+  const containerId = 'aiNewsPanel';
+  let panel = document.getElementById(containerId);
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = containerId;
+    panel.className = 'mt-10';
+    document.getElementById('sidebar')?.appendChild(panel);
+  }
+  panel.innerHTML = `
+    <h3 class="text-lg font-bold mb-3">📰 AI News</h3>
+    <ul class="space-y-2 text-sm">
+      ${items.slice(0,10).map(it => `<li><a class="text-blue-600 hover:underline" href="${it.link}" target="_blank">${it.title}</a></li>`).join('')}
+    </ul>`;
+}
+
+// call on load
+loadAiNews();

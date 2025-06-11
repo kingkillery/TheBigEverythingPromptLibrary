@@ -80,6 +80,8 @@ from collections_db import (
     delete_chain,
 )
 
+from rss_news import rss_fetcher
+
 app = FastAPI(title="Prompt Library API", version="1.0.0")
 
 # Configure CORS
@@ -1364,6 +1366,14 @@ async def grade_prompt_endpoint(payload: PromptGradeRequest):
         use_llm=payload.use_llm,
     )
     return result
+
+# ---------------------- AI News RSS ---------------------------
+
+@app.get("/api/ai-news")
+async def get_ai_news(limit: int = Query(20, description="Max news items")):
+    """Return latest AI-related headlines aggregated from RSS feeds."""
+    items = rss_fetcher.get_ai_news()[:limit]
+    return {"items": items}
 
 if __name__ == "__main__":
     import uvicorn

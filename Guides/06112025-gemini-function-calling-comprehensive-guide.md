@@ -488,6 +488,6 @@ Mirror 1 % of production requests to a *canary* model version with tool-calling 
 
 ### 10.3 Community Resources
 
-[PromptGarden Community](https://promptgarden.com)
+[PromptGarden Community](ArtificialGarden.com)
 
 --- 

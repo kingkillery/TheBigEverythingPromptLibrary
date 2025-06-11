@@ -1533,11 +1533,13 @@
     "Guides_06102025-claude-classification-techniques-comprehensive-guide",
     "Guides_06102025-claude-customer-service-agent-comprehensive-guide",
     "Guides_06102025-claude-rag-implementation-comprehensive-guide",
+    "Guides_06102025-claude-summarization-techniques-comprehensive-guide",
     "Guides_06102025-cross-platform-prompt-engineering-comprehensive-comparison",
     "Guides_06102025-fine-tune-chatbot-docs-synthetic-data",
     "Guides_06102025-fine-tune-vision-transformer-biomedical-dataset",
     "Guides_06102025-gemini-grounding-techniques-comprehensive-guide",
     "Guides_06102025-huggingface-open-source-ai-comprehensive-guide",
+    "Guides_06112025-gemini-function-calling-comprehensive-guide",
     "Guides_08062025-claude-tool-use-comprehensive-guide",
     "Guides_08062025-cursor-ai-cursorrules-comprehensive-guide",
     "Guides_08062025-openai-multi-tool-orchestration-rag-guide",
@@ -1697,8 +1699,8 @@
     "Jailbreak_jb1"
   ],
   "embedding_shape": [
-    1694,
+    1696,
     384
   ],
-  "created_at": "2025-06-11T05:47:39"
+  "created_at": "2025-06-11T06:06:03"
 }
