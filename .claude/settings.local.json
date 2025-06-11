@@ -10,7 +10,9 @@
       "Bash(mkdir:*)",
       "Bash(chmod:*)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:cookbook.openai.com)"
+      "WebFetch(domain:cookbook.openai.com)",
+      "WebFetch(domain:huggingface.co)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ],
     "deny": []
   }

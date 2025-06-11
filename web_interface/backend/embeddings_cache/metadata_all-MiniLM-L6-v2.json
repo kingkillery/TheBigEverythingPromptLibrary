@@ -1528,6 +1528,8 @@
     "Guides_06082025-gpt4.1-prompting-guide",
     "Guides_06092025-advanced-prompt-engineering-techniques",
     "Guides_06092025-comprehensive-prompt-repository-integration-guide",
+    "Guides_06092025-openai-function-calls-reasoning-models-guide",
+    "Guides_06092025-openai-meta-prompting-guide",
     "Guides_08062025-claude-tool-use-comprehensive-guide",
     "Guides_08062025-cursor-ai-cursorrules-comprehensive-guide",
     "Guides_08062025-openai-multi-tool-orchestration-rag-guide",
@@ -1684,8 +1686,8 @@
     "Jailbreak_jb1"
   ],
   "embedding_shape": [
-    1681,
+    1683,
     384
   ],
-  "created_at": "2025-06-11T04:18:06"
+  "created_at": "2025-06-11T05:01:17"
 }

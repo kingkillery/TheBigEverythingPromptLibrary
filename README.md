@@ -27,6 +27,24 @@ Welcome to your one-stop collection for **prompts that actually work**! This rep
 3. **Customize** them for your specific use case
 4. **Share** your own successful prompts!
 
+## 🌐 Interactive Web Interface & API
+
+Explore the entire library with fuzzy / semantic search, quality filters, and LLM-powered utilities using our built-in **FastAPI web interface**.
+
+```powershell
+# one-command start (requires Docker Desktop or compatible engine)
+ git clone https://github.com/kingkillery/TheBigEverythingPromptLibrary.git
+ cd TheBigEverythingPromptLibrary
+ docker compose up -d      # or: make quick-start
+```
+
+Open **http://localhost:8000** in your browser.
+
+• API docs live at **/docs**  
+• Need advanced profiles or dev mode? See [Docker Setup Guide](./DOCKER_SETUP.md).
+
+Prefer to run without Docker? Follow the instructions in [web_interface/README.md](./web_interface/README.md).
+
 ## Contributing Your Prompts
 
 Got a prompt that consistently delivers great results? We'd love to add it! Whether it's:

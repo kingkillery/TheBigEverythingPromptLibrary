@@ -152,5 +152,25 @@ def get_popular(limit: int = 10):
         return [dict(prompt_id=r[0], views=r[1], grafts=r[2]) for r in cur.fetchall()]
 
 
+def rename_collection(collection_id: int, new_name: str) -> None:
+    with _get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE collections SET name = ? WHERE id = ?",
+            (new_name, collection_id),
+        )
+        conn.commit()
+
+
+def delete_collection(collection_id: int) -> None:
+    with _get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "DELETE FROM collections WHERE id = ?",
+            (collection_id,),
+        )
+        conn.commit()
+
+
 # Initialize DB when module imported
 init_db() 

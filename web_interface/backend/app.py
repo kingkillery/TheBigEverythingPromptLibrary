@@ -60,6 +60,8 @@ from collections_db import (
     record_view,
     record_graft,
     get_popular,
+    rename_collection as db_rename_collection,
+    delete_collection as db_delete_collection,
 )
 
 app = FastAPI(title="Prompt Library API", version="1.0.0")
@@ -965,6 +967,37 @@ async def get_popular_prompts(limit: int = Query(10)):
         if item:
             items.append({"prompt": item.dict(), **p})
     return items
+
+# ---------------------- Collection Management ----------------------------
+
+@app.put("/api/collections/{collection_id}")
+async def rename_collection_endpoint(
+    collection_id: int,
+    payload: CollectionCreate,
+    user_id: str = Header(..., alias="X-User-Id"),
+):
+    """Rename an existing collection (garden bed)"""
+    cols = list_collections(user_id)
+    if not any(c["id"] == collection_id for c in cols):
+        raise HTTPException(status_code=404, detail="Collection not found")
+    new_name = payload.name.strip()
+    if not new_name:
+        raise HTTPException(status_code=400, detail="Name required")
+    db_rename_collection(collection_id, new_name)
+    return {"id": collection_id, "name": new_name}
+
+
+@app.delete("/api/collections/{collection_id}", status_code=204)
+async def delete_collection_endpoint(
+    collection_id: int,
+    user_id: str = Header(..., alias="X-User-Id"),
+):
+    """Delete a collection and its items"""
+    cols = list_collections(user_id)
+    if not any(c["id"] == collection_id for c in cols):
+        raise HTTPException(status_code=404, detail="Collection not found")
+    db_delete_collection(collection_id)
+    return {"status": "deleted"}
 
 if __name__ == "__main__":
     import uvicorn

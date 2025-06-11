@@ -226,6 +226,7 @@ Got a prompt that consistently delivers great results? We welcome contributions!
 
 ### 🔗 Quick Links
 - [Main README](./README.md) - Project overview
+- [Web Interface & API](./web_interface/README.md) - Interactive search & docs
 - [.scripts/](./.scripts/) - Repository management tools
 - [GitHub Repository](https://github.com/kingkillery/TheBigEverythingPromptLibrary) - Main repository
 - [Issues & Features](https://github.com/kingkillery/TheBigEverythingPromptLibrary/issues) - Report problems or request features
