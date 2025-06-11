@@ -251,6 +251,8 @@ class IndexManager:
                 tags.append("security")
             elif category == "SystemPrompts":
                 tags.append("system-prompt")
+            elif category == "DeepResearch":
+                tags.append("research")
             
             item = PromptItem(
                 id=f"{category}_{file_path.stem}",
