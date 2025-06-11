@@ -89,18 +89,38 @@ function renderPromptModal(item) {
   modal.appendChild(title);
 
   // Full content
-  const pre = document.createElement("pre");
-  pre.className = "whitespace-pre-wrap text-sm";
-  pre.textContent = item.full_content || item.content || "No content available.";
-  modal.appendChild(pre);
+  const contentDiv = document.createElement("div");
+  contentDiv.className = "prose max-w-none text-sm";
+  contentDiv.innerHTML = formatMarkdown(item.full_content || item.content || "No content available.");
+  modal.appendChild(contentDiv);
+
+  // Action buttons container
+  const actions = document.createElement("div");
+  actions.className = "mt-6 flex justify-end gap-2";
+
+  // Copy button
+  const copyBtn = document.createElement("button");
+  copyBtn.className = "px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm";
+  copyBtn.textContent = "Copy";
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(item.full_content || item.content || "");
+      copyBtn.textContent = "Copied!";
+      setTimeout(() => (copyBtn.textContent = "Copy"), 1500);
+    } catch {
+      alert("Failed to copy to clipboard");
+    }
+  });
+  actions.appendChild(copyBtn);
 
   // Close button
   const closeBtn = document.createElement("button");
-  closeBtn.className = "mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700";
+  closeBtn.className = "px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm";
   closeBtn.textContent = "Close";
   closeBtn.addEventListener("click", () => overlay.remove());
-  modal.appendChild(closeBtn);
+  actions.appendChild(closeBtn);
 
+  modal.appendChild(actions);
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
 }
@@ -149,16 +169,35 @@ function renderChatOutput(data) {
   // Optimized prompt
   if (data.optimized_prompt) {
     const optDiv = document.createElement("div");
-    optDiv.className = "p-4 bg-white rounded-md shadow";
-    optDiv.innerHTML = `<h3 class='font-semibold mb-2 text-green-700'>Optimized Prompt</h3><div class='prose max-w-none text-sm'>${formatMarkdown(data.optimized_prompt)}</div>`;
+    optDiv.className = "p-4 bg-white rounded-md shadow relative";
+    optDiv.innerHTML = `<h3 class='font-semibold mb-2 text-green-700'>Optimized Prompt</h3>`;
+    const pre = document.createElement("pre");
+    pre.className = "whitespace-pre-wrap text-sm";
+    pre.textContent = data.optimized_prompt;
+    optDiv.appendChild(pre);
+    // copy button
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "absolute top-2 right-2 text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded";
+    copyBtn.textContent = "Copy";
+    copyBtn.addEventListener("click", () => copyText(data.optimized_prompt));
+    optDiv.appendChild(copyBtn);
     container.appendChild(optDiv);
   }
 
   // Tweaked top match
   if (data.tweaked_match) {
     const tweakDiv = document.createElement("div");
-    tweakDiv.className = "p-4 bg-white rounded-md shadow";
-    tweakDiv.innerHTML = `<h3 class='font-semibold mb-2 text-indigo-700'>Tweaked Top Match</h3><div class='prose max-w-none text-sm'>${formatMarkdown(data.tweaked_match)}</div>`;
+    tweakDiv.className = "p-4 bg-white rounded-md shadow relative";
+    tweakDiv.innerHTML = `<h3 class='font-semibold mb-2 text-indigo-700'>Tweaked Top Match</h3>`;
+    const pre2 = document.createElement("pre");
+    pre2.className = "whitespace-pre-wrap text-sm";
+    pre2.textContent = data.tweaked_match;
+    tweakDiv.appendChild(pre2);
+    const copyBtn2 = document.createElement("button");
+    copyBtn2.className = "absolute top-2 right-2 text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded";
+    copyBtn2.textContent = "Copy";
+    copyBtn2.addEventListener("click", () => copyText(data.tweaked_match));
+    tweakDiv.appendChild(copyBtn2);
     container.appendChild(tweakDiv);
   }
 
@@ -179,6 +218,37 @@ function renderChatOutput(data) {
       container.appendChild(div);
     });
   }
+}
+
+// Utility to copy text
+function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => {
+      toast("Copied!");
+    });
+  } else {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      document.execCommand("copy");
+      toast("Copied!");
+    } catch {}
+    ta.remove();
+  }
+}
+
+// Simple toast
+function toast(msg) {
+  const t = document.createElement("div");
+  t.textContent = msg;
+  t.className = "fixed bottom-6 left-1/2 -translate-x-1/2 bg-black/80 text-white px-3 py-1 rounded-md z-50 text-sm";
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 1500);
 }
 
 // Attach event listener after DOM ready
