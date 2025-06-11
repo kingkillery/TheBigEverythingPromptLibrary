@@ -206,6 +206,7 @@ function renderPromptModal(item) {
         body: JSON.stringify({ prompt_id: item.id }),
       });
       addBtn.textContent = "Added!";
+      toast("Planted in your garden 🌱");
     } catch {
       alert("Failed to add to collection");
     }
@@ -371,6 +372,7 @@ function toast(msg) {
 window.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("chatProcessBtn");
   if (btn) btn.addEventListener("click", processPrompt);
+  document.getElementById("myBedBtn")?.addEventListener("click", showBedModal);
 });
 
 // Utility: get or generate userId stored locally
@@ -458,5 +460,3 @@ function showBedModal() {
         });
     });
 }
-
-document.getElementById("myBedBtn")?.addEventListener("click", showBedModal);
