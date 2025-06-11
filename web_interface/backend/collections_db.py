@@ -47,6 +47,20 @@ def init_db() -> None:
         )
         conn.commit()
 
+        # Usage stats table
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS usage_stats (
+                prompt_id TEXT PRIMARY KEY,
+                views INTEGER DEFAULT 0,
+                grafts INTEGER DEFAULT 0,
+                last_viewed TEXT,
+                last_grafted TEXT
+            )
+            """
+        )
+        conn.commit()
+
 
 # --- CRUD helpers ---------------------------------------------------------
 
@@ -101,6 +115,41 @@ def get_collection_items(collection_id: int) -> List[str]:
             (collection_id,),
         )
         return [row[0] for row in cur.fetchall()]
+
+
+# ------------------ Usage stats helpers -----------------------------------
+
+
+def record_view(prompt_id: str):
+    with _get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO usage_stats (prompt_id, views, last_viewed) VALUES (?, 1, CURRENT_TIMESTAMP) "
+            "ON CONFLICT(prompt_id) DO UPDATE SET views = views + 1, last_viewed = CURRENT_TIMESTAMP",
+            (prompt_id,),
+        )
+        conn.commit()
+
+
+def record_graft(prompt_id: str):
+    with _get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO usage_stats (prompt_id, grafts, last_grafted) VALUES (?, 1, CURRENT_TIMESTAMP) "
+            "ON CONFLICT(prompt_id) DO UPDATE SET grafts = grafts + 1, last_grafted = CURRENT_TIMESTAMP",
+            (prompt_id,),
+        )
+        conn.commit()
+
+
+def get_popular(limit: int = 10):
+    with _get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT prompt_id, views, grafts FROM usage_stats ORDER BY views DESC LIMIT ?",
+            (limit,),
+        )
+        return [dict(prompt_id=r[0], views=r[1], grafts=r[2]) for r in cur.fetchall()]
 
 
 # Initialize DB when module imported

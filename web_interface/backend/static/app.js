@@ -135,11 +135,26 @@ function renderPromptModal(item) {
   title.textContent = item.title || "Prompt";
   modal.appendChild(title);
 
-  // Full content
+  // Usage guide placeholder
+  const guideDiv = document.createElement("div");
+  guideDiv.className = "bg-yellow-50 border border-yellow-200 p-3 rounded mb-4 text-sm text-yellow-800";
+  guideDiv.textContent = "Loading guide...";
+  modal.appendChild(guideDiv);
+
   const contentDiv = document.createElement("div");
   contentDiv.className = "prose max-w-none text-sm";
   contentDiv.innerHTML = formatMarkdown(item.full_content || item.content || "No content available.");
   modal.appendChild(contentDiv);
+
+  // Fetch guide async
+  (async () => {
+    try {
+      const g = await fetchJSON(`/api/guide/${encodeURIComponent(item.id)}`);
+      guideDiv.innerHTML = `<strong>How to use:</strong> ${g.summary || ""}<br>${(g.advice || "").replace(/\n/g, "<br>")}`;
+    } catch {
+      guideDiv.remove();
+    }
+  })();
 
   // Action buttons container
   const actions = document.createElement("div");
@@ -196,6 +211,30 @@ function renderPromptModal(item) {
     }
   });
   actions.appendChild(addBtn);
+
+  // Remix button
+  const remixBtn = document.createElement("button");
+  remixBtn.className = "px-4 py-2 bg-fuchsia-600 text-white rounded hover:bg-fuchsia-700 text-sm";
+  remixBtn.textContent = "Remix";
+  remixBtn.addEventListener("click", async () => {
+    try {
+      const style = prompt("Choose remix style: shorter | friendly | technical", "shorter");
+      if (!style) return;
+      remixBtn.textContent = "Remixing...";
+      const res = await postJSON("/api/llm/enhance", {
+        prompt: item.full_content || item.content || "",
+        type: style,
+        original_id: item.id,
+      });
+      remixBtn.textContent = "Remix";
+      const result = res.enhanced_content || res.result || "No response";
+      alert(result);
+    } catch (err) {
+      remixBtn.textContent = "Remix";
+      alert("Failed to remix prompt");
+    }
+  });
+  actions.appendChild(remixBtn);
 
   modal.appendChild(actions);
   overlay.appendChild(modal);

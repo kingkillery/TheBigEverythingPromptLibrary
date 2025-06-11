@@ -55,6 +55,9 @@ from collections_db import (
     add_item as db_add_item,
     remove_item as db_remove_item,
     get_collection_items,
+    record_view,
+    record_graft,
+    get_popular,
 )
 
 app = FastAPI(title="Prompt Library API", version="1.0.0")
@@ -553,6 +556,11 @@ async def get_item(item_id: str):
         if item.id == item_id:
             # Return full content for the item
             full_content = index_manager.get_file_content(Path(item.file_path))
+            # Record view stat
+            try:
+                record_view(item_id)
+            except Exception:
+                pass
             return {**item.dict(), "full_content": full_content}
     
     raise HTTPException(status_code=404, detail="Item not found")
@@ -609,6 +617,11 @@ async def enhance_prompt_endpoint(
     
     result = await index_manager.llm_connector.enhance_prompt(prompt_content, enhancement_type)
     if result:
+        # Record graft stat
+        try:
+            record_graft(request.get("original_id", ""))
+        except Exception:
+            pass
         return result
     else:
         raise HTTPException(status_code=500, detail="Enhancement failed")
@@ -903,6 +916,51 @@ async def remove_item_endpoint(
         raise HTTPException(status_code=404, detail="Collection not found")
     db_remove_item(collection_id, prompt_id)
     return {"status": "removed"}
+
+@app.get("/api/guide/{item_id}")
+async def get_prompt_guide(item_id: str):
+    """Return contextual usage guide for a prompt (with caching placeholder)."""
+    # Find prompt
+    matches = [it for it in index_manager.index if it.id == item_id]
+    if not matches:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+    prompt_item = matches[0]
+    content = prompt_item.content
+
+    # Placeholder cache (in-memory dict on index_manager)
+    if not hasattr(index_manager, "_guide_cache"):
+        index_manager._guide_cache = {}
+    if item_id in index_manager._guide_cache:
+        return index_manager._guide_cache[item_id]
+
+    # Generate summary and usage advice
+    summary = ""
+    advice = ""
+    if index_manager.llm_connector:
+        try:
+            summary = await index_manager.llm_connector.summarize_prompt(content, 200) or ""
+            use_cases = await index_manager.llm_connector.suggest_use_cases(content)
+            advice = "\n".join(f"• {uc}" for uc in (use_cases or []))
+        except Exception:
+            pass
+    if not summary:
+        summary = content[:200] + "..."
+    guide = {"summary": summary, "advice": advice}
+    index_manager._guide_cache[item_id] = guide
+    return guide
+
+@app.get("/api/popular")
+async def get_popular_prompts(limit: int = Query(10)):
+    """Return most viewed prompts"""
+    pops = get_popular(limit)
+    # join with prompt details
+    id_map = {it.id: it for it in index_manager.index}
+    items = []
+    for p in pops:
+        item = id_map.get(p["prompt_id"])
+        if item:
+            items.append({"prompt": item.dict(), **p})
+    return items
 
 if __name__ == "__main__":
     import uvicorn

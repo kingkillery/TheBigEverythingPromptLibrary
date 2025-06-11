@@ -126,6 +126,27 @@ Original prompt:
 
 Provide 3 distinct variants with brief explanations.""",
             
+            "shorter": """Rewrite this AI prompt to be more concise while keeping the essential information and clarity intact.
+
+Original prompt:
+{prompt}
+
+Provide the shorter version only.""",
+            
+            "friendly": """Rewrite this AI prompt in a warmer, friendlier tone while preserving the instructions and intent.
+
+Original prompt:
+{prompt}
+
+Provide the friendlier version only.""",
+            
+            "technical": """Rewrite this AI prompt for a technical audience. Use precise terminology and assume the reader has prior domain knowledge.
+
+Original prompt:
+{prompt}
+
+Provide the technical version only.""",
+            
             "analyze": """Analyze this AI prompt for effectiveness. Consider:
 1. Clarity of instructions
 2. Potential ambiguities
