@@ -14,7 +14,8 @@
       "WebFetch(domain:huggingface.co)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:huggingface.co)",
-      "WebFetch(domain:docs.anthropic.com)"
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:platform.openai.com)"
     ],
     "deny": []
   }
