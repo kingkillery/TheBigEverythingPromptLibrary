@@ -885,15 +885,17 @@ async def create_collection_endpoint(
     col_id = create_collection(user_id, name)
     return {"id": col_id, "name": name}
 
-@app.get("/api/collections/{collection_id}", response_model=CollectionDetail)
+@app.get("/api/collections/{collection_id}")
 async def get_collection_endpoint(collection_id: int, user_id: str = Header(..., alias="X-User-Id")):
     # Verify collection belongs to user
     cols = list_collections(user_id)
     if not any(c["id"] == collection_id for c in cols):
         raise HTTPException(status_code=404, detail="Collection not found")
-    items = get_collection_items(collection_id)
+    item_ids = get_collection_items(collection_id)
+    id_map = {it.id: it for it in index_manager.index}
+    items_full = [id_map[pid] for pid in item_ids if pid in id_map]
     name = next(c["name"] for c in cols if c["id"] == collection_id)
-    return CollectionDetail(id=collection_id, name=name, items=items)
+    return {"id": collection_id, "name": name, "items": [it.dict() for it in items_full]}
 
 @app.post("/api/collections/{collection_id}/items", status_code=204)
 async def add_item_endpoint(
