@@ -16,28 +16,32 @@ Comprehensive guides for AI tools, prompting techniques, and development workflo
 
 ### Development Tools
 - **[Cursor AI .cursorrules Guide](./08062025-cursor-ai-cursorrules-comprehensive-guide.md)** - Complete guide to Cursor AI's .cursorrules configuration system for customizing AI-powered code assistance and project-specific behavior
+- **[Promptfoo Evaluation Guide](./09062025-promptfoo-evaluation-guide.md)** - Use Promptfoo to evaluate prompts and compare Anthropic model responses
 
 ### Multi-Tool Integration
 - **[OpenAI Multi-Tool Orchestration with RAG](./08062025-openai-multi-tool-orchestration-rag-guide.md)** - Advanced guide for orchestrating multiple tools with OpenAI models, including RAG (Retrieval-Augmented Generation) implementations
+
+### Third-Party Integrations
+- **[Voyage AI Embeddings Guide](./09062025-voyage-ai-embeddings-guide.md)** - Generate embeddings with Voyage AI for use in Claude-powered RAG workflows
 
 ## Guide Categories
 
 ### By Complexity
 - **Beginner**: GPT-4.1 Prompting Guide, Prompt Repository Integration Guide
-- **Intermediate**: Advanced Prompt Engineering Techniques, Claude Tool Use Guide, Cursor AI Guide  
+- **Intermediate**: Advanced Prompt Engineering Techniques, Claude Tool Use Guide, Cursor AI Guide, Promptfoo Evaluation Guide, Voyage AI Embeddings Guide
 - **Advanced**: Multi-Tool Orchestration with RAG
 
 ### By Use Case
 - **Prompting**: Advanced Prompt Engineering Techniques, GPT-4.1 Guide
 - **Repository Management**: Prompt Repository Integration Guide
 - **API Integration**: Claude Tool Use, Multi-Tool Orchestration
-- **Development Workflow**: Cursor AI Guide
-- **Data Retrieval**: RAG Guide
+- **Development Workflow**: Cursor AI Guide, Promptfoo Evaluation Guide
+- **Data Retrieval**: RAG Guide, Voyage AI Embeddings Guide
 
 ### By Platform
 - **Cross-Platform**: Advanced Prompt Engineering Techniques, Prompt Repository Integration Guide
 - **OpenAI**: GPT-4.1 Guide, Multi-Tool Orchestration
-- **Anthropic**: Claude Tool Use Guide
+- **Anthropic**: Claude Tool Use Guide, Promptfoo Evaluation Guide, Voyage AI Embeddings Guide
 - **Cursor**: Cursor AI Configuration Guide
 
 ---

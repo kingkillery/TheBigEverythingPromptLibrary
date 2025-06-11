@@ -2,7 +2,7 @@
 
 > Your comprehensive navigator for **1,800+ AI prompts, system prompts, and custom instructions**
 
-[![Repository Stats](https://img.shields.io/badge/Total_Files-1800+-blue)](.) [![System Prompts](https://img.shields.io/badge/System_Prompts-90+-green)](./SystemPrompts/) [![Custom Instructions](https://img.shields.io/badge/Custom_Instructions-1669+-orange)](./CustomInstructions/) [![Guides](https://img.shields.io/badge/Comprehensive_Guides-5-purple)](./Guides/)
+[![Repository Stats](https://img.shields.io/badge/Total_Files-1800+-blue)](.) [![System Prompts](https://img.shields.io/badge/System_Prompts-90+-green)](./SystemPrompts/) [![Custom Instructions](https://img.shields.io/badge/Custom_Instructions-1669+-orange)](./CustomInstructions/) [![Guides](https://img.shields.io/badge/Comprehensive_Guides-7-purple)](./Guides/)
 
 ## 🚀 Quick Navigation
 
@@ -22,7 +22,7 @@
 📂 Total Content Inventory:
 ├── 🤖 System Prompts: 90 files (Latest models from 15+ platforms)
 ├── 🎯 Custom Instructions: 1,669 files (Ready-to-use AI configurations)
-├── 📖 Comprehensive Guides: 5 files (In-depth tutorials)
+├── 📖 Comprehensive Guides: 7 files (In-depth tutorials)
 ├── 📝 Learning Articles: 6 files (Research & education)
 ├── 🔓 Advanced Techniques: 15+ files (Jailbreak & security research)
 └── 🛡️ Security Research: 50+ files (Protection & analysis)
@@ -121,6 +121,8 @@
 | **[GPT-4.1 Prompting Guide](./Guides/06082025-gpt4.1-prompting-guide.md)** | OpenAI | 🟢 Beginner | Official OpenAI guide for GPT-4.1 family models |
 | **[Claude Tool Use Guide](./Guides/08062025-claude-tool-use-comprehensive-guide.md)** | Anthropic | 🟡 Intermediate | Complete tool implementation with Claude API |
 | **[Cursor AI .cursorrules Guide](./Guides/08062025-cursor-ai-cursorrules-comprehensive-guide.md)** | Cursor | 🟡 Intermediate | AI-powered development workflow configuration |
+| **[Voyage AI Embeddings Guide](./Guides/09062025-voyage-ai-embeddings-guide.md)** | Anthropic | 🟡 Intermediate | Generate embeddings with Voyage AI for Claude RAG |
+| **[Promptfoo Evaluation Guide](./Guides/09062025-promptfoo-evaluation-guide.md)** | Anthropic | 🟡 Intermediate | Evaluate prompts using Promptfoo |
 | **[OpenAI Multi-Tool Orchestration](./Guides/08062025-openai-multi-tool-orchestration-rag-guide.md)** | OpenAI | 🔴 Advanced | RAG and multi-tool integration patterns |
 
 ---
