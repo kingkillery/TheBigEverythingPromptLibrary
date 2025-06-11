@@ -1,6 +1,7 @@
 # 06-11-2025 ‑ Gemini Function Calling – Comprehensive Guide
 
-> **Status**: draft
+> **Status**: complete  
+> **Last-updated**: 2025-06-11
 > **Author**: PromptGarden Team  
 > **Tags**: google-gemini, function-calling, tool-orchestration, api-design, prompt-engineering
 
