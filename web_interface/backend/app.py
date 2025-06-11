@@ -60,8 +60,16 @@ from collections_db import (
     record_view,
     record_graft,
     get_popular,
+    get_trending,
+    get_most_grafted,
+    get_new_sprouts,
     rename_collection as db_rename_collection,
     delete_collection as db_delete_collection,
+    create_chain,
+    list_chains,
+    get_chain,
+    update_chain,
+    delete_chain,
 )
 
 app = FastAPI(title="Prompt Library API", version="1.0.0")
@@ -929,7 +937,7 @@ async def remove_item_endpoint(
 
 @app.get("/api/guide/{item_id}")
 async def get_prompt_guide(item_id: str):
-    """Return contextual usage guide for a prompt (with caching placeholder)."""
+    """Return contextual usage guide for a prompt using RAG + LLM enhancement."""
     # Find prompt
     matches = [it for it in index_manager.index if it.id == item_id]
     if not matches:
@@ -943,19 +951,112 @@ async def get_prompt_guide(item_id: str):
     if item_id in index_manager._guide_cache:
         return index_manager._guide_cache[item_id]
 
-    # Generate summary and usage advice
+    # RAG: Find related guides and articles for context
+    related_guides = []
+    try:
+        # Search for related guides/articles using category and keywords
+        category_guides = index_manager.search(query=f"{prompt_item.category} guide tips", category="", limit=3)
+        if category_guides.items:
+            related_guides.extend([g for g in category_guides.items if "guide" in g.title.lower() or "tips" in g.title.lower()])
+        
+        # Search by prompt title keywords
+        title_words = prompt_item.title.split()[:3]  # First 3 words
+        for word in title_words:
+            word_guides = index_manager.search(query=f"{word} how to use", category="", limit=2)
+            if word_guides.items:
+                related_guides.extend([g for g in word_guides.items if g.id not in [rg.id for rg in related_guides]])
+    except Exception:
+        pass
+
+    # Generate enhanced guide with RAG context
     summary = ""
     advice = ""
+    tips = ""
+    
     if index_manager.llm_connector:
         try:
-            summary = await index_manager.llm_connector.summarize_prompt(content, 200) or ""
-            use_cases = await index_manager.llm_connector.suggest_use_cases(content)
-            advice = "\n".join(f"• {uc}" for uc in (use_cases or []))
-        except Exception:
-            pass
+            # Create context from related guides
+            rag_context = "\n\n".join([f"Related Guide: {g.title}\n{g.description[:300]}" for g in related_guides[:3]])
+            
+            # Enhanced prompt with RAG context
+            enhanced_guide_prompt = f"""
+Create a practical usage guide for this AI prompt. Use the related guides as context for best practices.
+
+TARGET PROMPT:
+Title: {prompt_item.title}
+Category: {prompt_item.category}
+Content: {content[:500]}...
+
+RELATED GUIDANCE CONTEXT:
+{rag_context}
+
+Please provide:
+1. A concise summary (1-2 sentences)
+2. Key usage tips (3-4 bullet points)
+3. Best practices specific to this type of prompt
+
+Focus on actionable advice that helps users get the best results."""
+
+            # Generate comprehensive guide
+            guide_result = await index_manager.llm_connector._make_request([
+                {"role": "system", "content": "You are an expert prompt engineer. Provide practical, actionable guidance."},
+                {"role": "user", "content": enhanced_guide_prompt}
+            ], model="llama-3.1-8b")
+            
+            if guide_result:
+                # Parse the response into sections
+                lines = guide_result.split('\n')
+                current_section = "summary"
+                
+                for line in lines:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    
+                    if "summary" in line.lower() or "overview" in line.lower():
+                        current_section = "summary"
+                    elif "tips" in line.lower() or "usage" in line.lower():
+                        current_section = "tips"
+                    elif "best practices" in line.lower() or "advice" in line.lower():
+                        current_section = "advice"
+                    elif line.startswith('•') or line.startswith('-') or line.startswith('*'):
+                        if current_section == "tips":
+                            tips += line + "\n"
+                        else:
+                            advice += line + "\n"
+                    elif current_section == "summary" and len(line) > 20:
+                        summary += line + " "
+                
+                # Fallback: use first part as summary if parsing failed
+                if not summary and guide_result:
+                    summary = guide_result.split('\n')[0][:200]
+            
+            # Generate additional use cases if no tips were extracted
+            if not tips and not advice:
+                use_cases = await index_manager.llm_connector.suggest_use_cases(content)
+                advice = "\n".join(f"• {uc}" for uc in (use_cases or []))
+                
+        except Exception as e:
+            print(f"Error generating enhanced guide: {e}")
+            # Fallback to basic generation
+            try:
+                summary = await index_manager.llm_connector.summarize_prompt(content, 200) or ""
+                use_cases = await index_manager.llm_connector.suggest_use_cases(content)
+                advice = "\n".join(f"• {uc}" for uc in (use_cases or []))
+            except Exception:
+                pass
+    
+    # Final fallback
     if not summary:
-        summary = content[:200] + "..."
-    guide = {"summary": summary, "advice": advice}
+        summary = f"A {prompt_item.category.lower()} prompt for {prompt_item.title.lower()}."
+    
+    guide = {
+        "summary": summary.strip(),
+        "advice": advice.strip(),
+        "tips": tips.strip(),
+        "related_guides_count": len(related_guides)
+    }
+    
     index_manager._guide_cache[item_id] = guide
     return guide
 
@@ -971,6 +1072,62 @@ async def get_popular_prompts(limit: int = Query(10)):
         if item:
             items.append({"prompt": item.dict(), **p})
     return items
+
+@app.get("/api/trending")
+async def get_trending_prompts(limit: int = Query(10)):
+    """Return trending prompts (hot in last 7 days)"""
+    trending = get_trending(limit)
+    id_map = {it.id: it for it in index_manager.index}
+    items = []
+    for t in trending:
+        item = id_map.get(t["prompt_id"])
+        if item:
+            items.append({"prompt": item.dict(), **t})
+    return items
+
+@app.get("/api/most-grafted")
+async def get_most_grafted_prompts(limit: int = Query(10)):
+    """Return most grafted (remixed) prompts"""
+    grafted = get_most_grafted(limit)
+    id_map = {it.id: it for it in index_manager.index}
+    items = []
+    for g in grafted:
+        item = id_map.get(g["prompt_id"])
+        if item:
+            items.append({"prompt": item.dict(), **g})
+    return items
+
+@app.get("/api/new-sprouts")
+async def get_new_sprouts_prompts(limit: int = Query(10)):
+    """Return recently discovered prompts (new sprouts)"""
+    sprouts = get_new_sprouts(limit)
+    id_map = {it.id: it for it in index_manager.index}
+    items = []
+    for s in sprouts:
+        item = id_map.get(s["prompt_id"])
+        if item:
+            items.append({"prompt": item.dict(), **s})
+    return items
+
+@app.get("/api/discovery-signals")
+async def get_discovery_signals():
+    """Return all discovery signals for the homepage"""
+    id_map = {it.id: it for it in index_manager.index}
+    
+    def enrich_items(items_data):
+        enriched = []
+        for item_data in items_data:
+            item = id_map.get(item_data["prompt_id"])
+            if item:
+                enriched.append({"prompt": item.dict(), **item_data})
+        return enriched
+    
+    return {
+        "trending_blossoms": enrich_items(get_trending(6)),
+        "most_grafted": enrich_items(get_most_grafted(6)),  
+        "new_sprouts": enrich_items(get_new_sprouts(6)),
+        "popular_classics": enrich_items(get_popular(6))
+    }
 
 # ---------------------- Collection Management ----------------------------
 
@@ -1002,6 +1159,176 @@ async def delete_collection_endpoint(
         raise HTTPException(status_code=404, detail="Collection not found")
     db_delete_collection(collection_id)
     return {"status": "deleted"}
+
+
+# ---------------------- Prompt Chains (Vines) Management -----------------
+
+class ChainCreate(BaseModel):
+    name: str
+    description: str = ""
+    prompts: List[Dict[str, Any]]
+
+class ChainUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    prompts: Optional[List[Dict[str, Any]]] = None
+
+@app.get("/api/chains")
+async def list_user_chains(user_id: str = Header(..., alias="X-User-Id")):
+    """List all prompt chains for a user"""
+    chains = list_chains(user_id)
+    # Parse prompts JSON for each chain
+    for chain in chains:
+        try:
+            import json
+            chain['prompts'] = json.loads(chain['prompts'])
+        except:
+            chain['prompts'] = []
+    return chains
+
+@app.post("/api/chains")
+async def create_new_chain(
+    chain: ChainCreate,
+    user_id: str = Header(..., alias="X-User-Id")
+):
+    """Create a new prompt chain"""
+    import json
+    prompts_json = json.dumps(chain.prompts)
+    chain_id = create_chain(user_id, chain.name, chain.description, prompts_json)
+    return {"id": chain_id, "name": chain.name, "description": chain.description}
+
+@app.get("/api/chains/{chain_id}")
+async def get_chain_details(
+    chain_id: int,
+    user_id: str = Header(..., alias="X-User-Id")
+):
+    """Get details of a specific chain"""
+    chain = get_chain(chain_id, user_id)
+    if not chain:
+        raise HTTPException(status_code=404, detail="Chain not found")
+    
+    # Parse prompts JSON
+    try:
+        import json
+        chain['prompts'] = json.loads(chain['prompts'])
+    except:
+        chain['prompts'] = []
+    
+    return chain
+
+@app.put("/api/chains/{chain_id}")
+async def update_chain_endpoint(
+    chain_id: int,
+    updates: ChainUpdate,
+    user_id: str = Header(..., alias="X-User-Id")
+):
+    """Update a prompt chain"""
+    chain = get_chain(chain_id, user_id)
+    if not chain:
+        raise HTTPException(status_code=404, detail="Chain not found")
+    
+    import json
+    prompts_json = json.dumps(updates.prompts) if updates.prompts is not None else None
+    
+    update_chain(
+        chain_id, 
+        user_id, 
+        name=updates.name,
+        description=updates.description,
+        prompts=prompts_json
+    )
+    
+    return {"status": "updated"}
+
+@app.delete("/api/chains/{chain_id}")
+async def delete_chain_endpoint(
+    chain_id: int,
+    user_id: str = Header(..., alias="X-User-Id")
+):
+    """Delete a prompt chain"""
+    chain = get_chain(chain_id, user_id)
+    if not chain:
+        raise HTTPException(status_code=404, detail="Chain not found")
+    
+    delete_chain(chain_id, user_id)
+    return {"status": "deleted"}
+
+@app.post("/api/chains/{chain_id}/execute")
+async def execute_chain(
+    chain_id: int,
+    user_id: str = Header(..., alias="X-User-Id")
+):
+    """Execute a prompt chain sequentially"""
+    if not index_manager.llm_connector:
+        raise HTTPException(status_code=501, detail="LLM connector not available")
+    
+    chain = get_chain(chain_id, user_id)
+    if not chain:
+        raise HTTPException(status_code=404, detail="Chain not found")
+    
+    import json
+    try:
+        prompts = json.loads(chain['prompts'])
+    except:
+        raise HTTPException(status_code=400, detail="Invalid chain prompts")
+    
+    if not prompts:
+        raise HTTPException(status_code=400, detail="Chain has no prompts")
+    
+    results = []
+    previous_output = None
+    
+    for i, prompt_data in enumerate(prompts):
+        try:
+            prompt_content = prompt_data.get('content', '')
+            prompt_title = prompt_data.get('title', f'Step {i+1}')
+            
+            # If this isn't the first prompt, use previous output as input
+            if previous_output and '{previous_output}' in prompt_content:
+                prompt_content = prompt_content.replace('{previous_output}', previous_output)
+            
+            # Execute the prompt
+            messages = [
+                {"role": "user", "content": prompt_content}
+            ]
+            
+            output = await index_manager.llm_connector._make_request(messages)
+            
+            if output:
+                results.append({
+                    "step": i + 1,
+                    "title": prompt_title,
+                    "prompt": prompt_content,
+                    "output": output,
+                    "success": True
+                })
+                previous_output = output
+            else:
+                results.append({
+                    "step": i + 1,
+                    "title": prompt_title,
+                    "prompt": prompt_content,
+                    "output": "No response from LLM",
+                    "success": False
+                })
+                break
+                
+        except Exception as e:
+            results.append({
+                "step": i + 1,
+                "title": prompt_data.get('title', f'Step {i+1}'),
+                "prompt": prompt_data.get('content', ''),
+                "output": f"Error: {str(e)}",
+                "success": False
+            })
+            break
+    
+    return {
+        "chain_id": chain_id,
+        "chain_name": chain['name'],
+        "results": results,
+        "final_output": results[-1]['output'] if results else None
+    }
 
 if __name__ == "__main__":
     import uvicorn

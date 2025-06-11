@@ -196,6 +196,13 @@ Original prompt:
 
 Provide the technical version only.""",
             
+            "creative": """Rewrite this AI prompt to be more creative, inspiring, and imaginative. Add artistic flair and encourage innovative thinking while preserving the core objective.
+
+Original prompt:
+{prompt}
+
+Provide the creative version only.""",
+            
             "analyze": """Analyze this AI prompt for effectiveness. Consider:
 1. Clarity of instructions
 2. Potential ambiguities

@@ -313,6 +313,7 @@ document.getElementById("categoryFilter").addEventListener("change", search);
 
 (async function init() {
   await populateCategories();
+  await loadDiscoverySignals();
   // Fetch total count quick via search API once
   try {
     const data = await fetchJSON("/api/search?limit=1");
@@ -322,6 +323,136 @@ document.getElementById("categoryFilter").addEventListener("change", search);
   } catch {}
   search();
 })();
+
+// Load and display discovery signals (trending, popular, etc.)
+async function loadDiscoverySignals() {
+  try {
+    const signals = await fetchJSON("/api/discovery-signals");
+    renderDiscoverySignals(signals);
+  } catch (error) {
+    console.log("Could not load discovery signals:", error);
+  }
+}
+
+function renderDiscoverySignals(signals) {
+  // Create discovery signals section after category grid
+  const categoryGrid = document.getElementById("categoryGrid");
+  if (!categoryGrid) return;
+  
+  let discoverySection = document.getElementById("discoverySignals");
+  if (!discoverySection) {
+    discoverySection = document.createElement("div");
+    discoverySection.id = "discoverySignals";
+    discoverySection.className = "mt-12 mb-8";
+    categoryGrid.parentNode.insertBefore(discoverySection, categoryGrid.nextSibling);
+  }
+  
+  const signalTypes = [
+    {
+      key: 'trending_blossoms',
+      title: '🔥 Trending Blossoms',
+      description: 'Hot prompts gaining traction',
+      color: 'from-red-400 to-orange-500'
+    },
+    {
+      key: 'most_grafted', 
+      title: '🌿 Most Grafted',
+      description: 'Frequently remixed prompts',
+      color: 'from-green-400 to-emerald-500'
+    },
+    {
+      key: 'new_sprouts',
+      title: '🌱 New Sprouts',
+      description: 'Recently discovered gems',
+      color: 'from-lime-400 to-green-500'
+    },
+    {
+      key: 'popular_classics',
+      title: '⭐ Popular Classics',
+      description: 'Most viewed all-time',
+      color: 'from-yellow-400 to-amber-500'
+    }
+  ];
+  
+  discoverySection.innerHTML = `
+    <div class="text-center mb-8">
+      <h2 class="text-3xl font-bold text-gray-800 mb-2">🌸 Garden Discovery</h2>
+      <p class="text-gray-600">Explore what's blooming in the community</p>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      ${signalTypes.map(signalType => {
+        const items = signals[signalType.key] || [];
+        if (items.length === 0) return '';
+        
+        return `
+          <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+            <div class="bg-gradient-to-r ${signalType.color} p-4 text-white">
+              <h3 class="font-bold text-lg">${signalType.title}</h3>
+              <p class="text-sm opacity-90">${signalType.description}</p>
+            </div>
+            <div class="p-4 space-y-3">
+              ${items.slice(0, 3).map(item => `
+                <div class="flex items-center justify-between text-sm cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors" onclick="showPrompt('${item.prompt.id}')">
+                  <div class="flex-1 min-w-0">
+                    <div class="font-medium text-gray-900 truncate">${item.prompt.title}</div>
+                    <div class="text-gray-500 text-xs">${item.prompt.category}</div>
+                  </div>
+                  <div class="flex items-center gap-1 text-xs text-gray-400 ml-2">
+                    ${item.views ? `<span title="Views">👁 ${item.views}</span>` : ''}
+                    ${item.grafts ? `<span title="Grafts">🌿 ${item.grafts}</span>` : ''}
+                    ${item.trending_score ? `<span title="Trending Score">🔥 ${Math.round(item.trending_score)}</span>` : ''}
+                  </div>
+                </div>
+              `).join('')}
+              
+              ${items.length > 3 ? `
+                <button class="w-full text-center text-sm text-gray-500 hover:text-gray-700 py-2 border-t border-gray-100 mt-3" onclick="showAllSignals('${signalType.key}', '${signalType.title}')">
+                  +${items.length - 3} more ${signalType.title.toLowerCase()}
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function showAllSignals(signalKey, title) {
+  // Open modal showing all items for this signal type
+  fetchJSON(`/api/${signalKey.replace('_', '-')}`).then(items => {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-60';
+    modal.innerHTML = `
+      <div class="bg-white rounded-2xl p-8 max-w-4xl max-h-[80vh] overflow-y-auto m-4 shadow-2xl">
+        <h2 class="text-2xl font-bold mb-6 text-gray-800">${title}</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          ${items.map(item => `
+            <div class="p-4 border border-gray-200 rounded-xl hover:border-emerald-300 cursor-pointer transition-colors" onclick="showPrompt('${item.prompt.id}'); this.closest('.fixed').remove()">
+              <h3 class="font-semibold text-gray-900 mb-1">${item.prompt.title}</h3>
+              <p class="text-sm text-gray-600 mb-2">${item.prompt.description}</p>
+              <div class="flex items-center justify-between text-xs text-gray-500">
+                <span class="px-2 py-1 bg-gray-100 rounded">${item.prompt.category}</span>
+                <div class="flex gap-2">
+                  ${item.views ? `<span>👁 ${item.views}</span>` : ''}
+                  ${item.grafts ? `<span>🌿 ${item.grafts}</span>` : ''}
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="flex justify-center mt-6">
+          <button onclick="this.closest('.fixed').remove()" class="px-6 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors">
+            Close
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }).catch(() => {
+    showSuccessToast("Could not load trending signals", 'error');
+  });
+}
 
 // NEW CODE: cache + modal display of prompt content
 const promptCache = {};
@@ -361,10 +492,16 @@ function renderPromptModal(item) {
   title.textContent = item.title || "Prompt";
   modal.appendChild(title);
 
-  // Usage guide placeholder
+  // Enhanced usage guide section
   const guideDiv = document.createElement("div");
-  guideDiv.className = "bg-yellow-50 border border-yellow-200 p-3 rounded mb-4 text-sm text-yellow-800";
-  guideDiv.textContent = "Loading guide...";
+  guideDiv.className = "bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 p-4 rounded-xl mb-6 shadow-sm";
+  guideDiv.innerHTML = `
+    <div class="flex items-center gap-2 mb-3">
+      <span class="text-lg">🌱</span>
+      <h3 class="font-bold text-emerald-700">How to Use This Prompt</h3>
+      <div class="animate-pulse h-2 w-2 bg-emerald-400 rounded-full"></div>
+    </div>
+    <div class="text-sm text-emerald-600">Loading personalized guidance...</div>`;
   modal.appendChild(guideDiv);
 
   const contentDiv = document.createElement("div");
@@ -372,13 +509,70 @@ function renderPromptModal(item) {
   contentDiv.innerHTML = formatMarkdown(item.full_content || item.content || "No content available.");
   modal.appendChild(contentDiv);
 
-  // Fetch guide async
+  // Fetch enhanced guide async
   (async () => {
     try {
       const g = await fetchJSON(`/api/guide/${encodeURIComponent(item.id)}`);
-      guideDiv.innerHTML = `<strong>How to use:</strong> ${g.summary || ""}<br>${(g.advice || "").replace(/\n/g, "<br>")}`;
-    } catch {
-      guideDiv.remove();
+      
+      let guideContent = `
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-lg">🌱</span>
+          <h3 class="font-bold text-emerald-700">How to Use This Prompt</h3>
+          ${g.related_guides_count > 0 ? `<span class="text-xs bg-emerald-100 text-emerald-600 px-2 py-1 rounded-full">${g.related_guides_count} guides referenced</span>` : ''}
+        </div>`;
+      
+      if (g.summary) {
+        guideContent += `<div class="mb-3 text-emerald-800 font-medium">${g.summary}</div>`;
+      }
+      
+      if (g.tips) {
+        guideContent += `
+          <div class="mb-3">
+            <h4 class="font-semibold text-emerald-700 mb-2 flex items-center gap-1">
+              <span>💡</span> Key Tips
+            </h4>
+            <div class="text-sm text-emerald-600 space-y-1">
+              ${g.tips.replace(/\n/g, "<br>")}
+            </div>
+          </div>`;
+      }
+      
+      if (g.advice) {
+        guideContent += `
+          <div>
+            <h4 class="font-semibold text-emerald-700 mb-2 flex items-center gap-1">
+              <span>🎯</span> Best Practices
+            </h4>
+            <div class="text-sm text-emerald-600 space-y-1">
+              ${g.advice.replace(/\n/g, "<br>")}
+            </div>
+          </div>`;
+      }
+      
+      guideDiv.innerHTML = guideContent;
+      
+      // Add sparkle effect for enhanced guides
+      if (g.related_guides_count > 0) {
+        setTimeout(() => {
+          const sparkle = document.createElement('div');
+          sparkle.innerHTML = '✨';
+          sparkle.className = 'absolute top-2 right-2 animate-bounce text-lg';
+          guideDiv.style.position = 'relative';
+          guideDiv.appendChild(sparkle);
+          setTimeout(() => sparkle.remove(), 3000);
+        }, 500);
+      }
+      
+    } catch (error) {
+      console.log("Could not load usage guide:", error);
+      guideDiv.innerHTML = `
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-lg">🌱</span>
+          <h3 class="font-bold text-emerald-700">Usage Guide</h3>
+        </div>
+        <div class="text-sm text-emerald-600">
+          This is a ${item.category || 'general'} prompt. Use it to ${item.description || 'accomplish your task'}.
+        </div>`;
     }
   })();
 
@@ -493,41 +687,16 @@ function renderPromptModal(item) {
   });
   actions.appendChild(addBtn);
 
-  // Enhanced Remix button
+  // Enhanced Remix button with preset graft options
   const remixBtn = document.createElement("button");
   remixBtn.className = "px-6 py-3 bg-gradient-to-r from-fuchsia-500 to-pink-600 text-white rounded-xl hover:from-fuchsia-600 hover:to-pink-700 text-sm font-medium transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2";
   remixBtn.innerHTML = `
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
     </svg>
-    <span>Remix</span>`;
-  remixBtn.addEventListener("click", async () => {
-    const originalContent = remixBtn.innerHTML;
-    const style = prompt("Choose remix style: shorter | friendly | technical | creative", "shorter");
-    if (!style) return;
-    
-    remixBtn.innerHTML = `
-      <div class="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent"></div>
-      <span>Remixing...</span>`;
-    
-    try {
-      const res = await postJSON("/api/llm/enhance", {
-        prompt: item.full_content || item.content || "",
-        type: style,
-        original_id: item.id,
-      });
-      
-      remixBtn.innerHTML = originalContent;
-      const result = res.enhanced_content || res.result || "No response";
-      
-      // Show enhanced result modal
-      showRemixResult(result, style);
-      showSuccessToast(`Prompt remixed in ${style} style! 🎨`);
-      
-    } catch (err) {
-      remixBtn.innerHTML = originalContent;
-      showSuccessToast("Failed to remix prompt", 'error');
-    }
+    <span>Graft</span>`;
+  remixBtn.addEventListener("click", () => {
+    showGraftModal(item);
   });
   actions.appendChild(remixBtn);
 
@@ -547,23 +716,153 @@ function createRippleEffect(button) {
   setTimeout(() => ripple.remove(), 600);
 }
 
-function showRemixResult(result, style) {
+// Enhanced Graft Modal with preset options
+function showGraftModal(item) {
+  const overlay = document.createElement('div');
+  overlay.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-60';
+  
+  const graftOptions = [
+    {
+      type: 'shorter',
+      title: '📝 Make it Concise',
+      description: 'Trim the fat, keep the essence',
+      icon: '✂️',
+      color: 'from-blue-400 to-cyan-500'
+    },
+    {
+      type: 'friendly',
+      title: '😊 Make it Friendly',
+      description: 'Warm, approachable, conversational',
+      icon: '🤗',
+      color: 'from-green-400 to-emerald-500'
+    },
+    {
+      type: 'technical',
+      title: '🔧 Make it Technical',
+      description: 'Precise, detailed, expert-level',
+      icon: '⚙️',
+      color: 'from-purple-400 to-indigo-500'
+    },
+    {
+      type: 'creative',
+      title: '🎨 Make it Creative',
+      description: 'Inspiring, imaginative, artistic',
+      icon: '✨',
+      color: 'from-pink-400 to-rose-500'
+    },
+    {
+      type: 'expand',
+      title: '📚 Expand & Detail',
+      description: 'Add context, examples, depth',
+      icon: '📈',
+      color: 'from-amber-400 to-orange-500'
+    },
+    {
+      type: 'variants',
+      title: '🔄 Create Variants',
+      description: '3 different approaches',
+      icon: '🌟',
+      color: 'from-violet-400 to-purple-500'
+    }
+  ];
+  
+  overlay.innerHTML = `
+    <div class="bg-white/95 backdrop-blur-lg rounded-2xl p-8 max-w-4xl max-h-[90vh] overflow-y-auto m-4 shadow-2xl border border-purple-200">
+      <div class="text-center mb-8">
+        <h2 class="text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-600 to-pink-600">
+          🌿 Graft this Prompt
+        </h2>
+        <p class="text-gray-600">Choose how to transform and improve this prompt</p>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        ${graftOptions.map(option => `
+          <button class="graft-option p-6 bg-gradient-to-br ${option.color} text-white rounded-xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300 text-left group" data-type="${option.type}">
+            <div class="flex items-center gap-3 mb-3">
+              <span class="text-2xl">${option.icon}</span>
+              <span class="text-xl font-bold group-hover:text-yellow-200 transition-colors">${option.title}</span>
+            </div>
+            <p class="text-sm opacity-90 group-hover:opacity-100 transition-opacity">${option.description}</p>
+            <div class="mt-4 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+              <span class="text-xs bg-white/20 px-2 py-1 rounded-full">→ Transform</span>
+            </div>
+          </button>
+        `).join('')}
+      </div>
+      
+      <div class="flex justify-center">
+        <button onclick="this.closest('.fixed').remove()" class="px-6 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors font-medium">
+          Cancel
+        </button>
+      </div>
+    </div>`;
+  
+  // Add click handlers for graft options
+  overlay.querySelectorAll('.graft-option').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const type = btn.dataset.type;
+      const option = graftOptions.find(o => o.type === type);
+      
+      // Visual feedback
+      btn.style.transform = 'scale(0.95)';
+      btn.innerHTML = `
+        <div class="flex items-center justify-center h-full">
+          <div class="animate-spin h-8 w-8 border-4 border-white rounded-full border-t-transparent"></div>
+          <span class="ml-3 font-medium">Grafting...</span>
+        </div>`;
+      
+      try {
+        const res = await postJSON("/api/llm/enhance", {
+          prompt: item.full_content || item.content || "",
+          type: type,
+          original_id: item.id,
+        });
+        
+        overlay.remove();
+        const result = res.enhanced_content || res.result || "No response";
+        showGraftResult(result, option);
+        showSuccessToast(`${option.icon} Prompt grafted ${option.title.toLowerCase()}! 🌱`);
+        
+      } catch (err) {
+        btn.style.transform = '';
+        btn.innerHTML = `
+          <div class="flex items-center gap-3 mb-3">
+            <span class="text-2xl">${option.icon}</span>
+            <span class="text-xl font-bold">${option.title}</span>
+          </div>
+          <p class="text-sm opacity-90">${option.description}</p>
+          <p class="text-xs mt-2 bg-red-500/20 p-2 rounded">Failed to graft. Try again?</p>`;
+        showSuccessToast("Grafting failed. Please try again.", 'error');
+      }
+    });
+  });
+  
+  document.body.appendChild(overlay);
+}
+
+function showGraftResult(result, option) {
   const modal = document.createElement('div');
   modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-60';
   modal.innerHTML = `
-    <div class="bg-white rounded-2xl p-8 max-w-2xl max-h-[80vh] overflow-y-auto m-4 shadow-2xl">
-      <h3 class="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-600 to-pink-600">
-        ✨ Remixed Prompt (${style} style)
+    <div class="bg-white rounded-2xl p-8 max-w-4xl max-h-[80vh] overflow-y-auto m-4 shadow-2xl">
+      <h3 class="text-3xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-600 to-pink-600">
+        ${option.icon} ${option.title}
       </h3>
-      <div class="bg-gray-50 rounded-xl p-4 mb-6">
-        <pre class="whitespace-pre-wrap text-sm">${result}</pre>
+      <p class="text-gray-600 mb-6">${option.description}</p>
+      
+      <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 mb-6 border-2 border-purple-100">
+        <pre class="whitespace-pre-wrap text-sm leading-relaxed">${result}</pre>
       </div>
+      
       <div class="flex justify-end gap-3">
-        <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+        <button onclick="this.closest('.fixed').remove()" class="px-6 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors font-medium">
           Close
         </button>
-        <button onclick="navigator.clipboard.writeText('${result.replace(/'/g, "\\'")}'); showSuccessToast('Remixed prompt copied! 🎉')" class="px-4 py-2 bg-fuchsia-500 text-white rounded-lg hover:bg-fuchsia-600 transition-colors">
-          Copy Remix
+        <button onclick="navigator.clipboard.writeText(\`${result.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`); showSuccessToast('Grafted prompt copied! ${option.icon}🎉')" class="px-6 py-3 bg-gradient-to-r from-fuchsia-500 to-pink-600 text-white rounded-xl hover:from-fuchsia-600 hover:to-pink-700 transition-all font-medium">
+          Copy Grafted Prompt
+        </button>
+        <button onclick="showGraftModal({id: 'grafted', content: \`${result.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, title: 'Grafted Prompt'})" class="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all font-medium">
+          Graft Again 🌿
         </button>
       </div>
     </div>`;
@@ -776,6 +1075,16 @@ window.addEventListener("DOMContentLoaded", () => {
       showSuccessToast("Welcome to Artificial Garden! 🌿✨");
       localStorage.setItem('hasVisited', 'true');
     }, 1000);
+  }
+
+  const drBtn = document.getElementById("deepResearchBtn");
+  if (drBtn) {
+    drBtn.addEventListener("click", () => {
+      document.getElementById("categoryFilter").value = "DeepResearch";
+      document.getElementById("searchInput").scrollIntoView({ behavior: "smooth", block: "center" });
+      showSuccessToast("Exploring Deep Research! 🧠");
+      search();
+    });
   }
 });
 
