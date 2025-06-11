@@ -282,7 +282,8 @@ class IndexManager:
             ("Articles", "Articles"), 
             ("SystemPrompts", "SystemPrompts"),
             ("Security", "Security"),
-            ("Jailbreak", "Jailbreak")
+            ("Jailbreak", "Jailbreak"),
+            ("DeepResearch", "DeepResearch"),
         ]
         
         for directory, category in categories:
