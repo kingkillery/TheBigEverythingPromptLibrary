@@ -18,6 +18,14 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
+# Optional trending RSS feed
+try:
+    from trending_feed import get_trending_feed
+    TRENDING_FEED_AVAILABLE = True
+except ImportError:
+    TRENDING_FEED_AVAILABLE = False
+    print("Trending feed not available. Install with: pip install pygooglenews")
+
 # Add the scripts directory to path to import gptparser
 REPO_ROOT = Path(__file__).parent.parent.parent
 sys.path.append(str(REPO_ROOT / ".scripts"))
@@ -1108,6 +1116,13 @@ async def get_new_sprouts_prompts(limit: int = Query(10)):
         if item:
             items.append({"prompt": item.dict(), **s})
     return items
+
+@app.get("/api/trending-feed")
+async def get_trending_feed_endpoint(limit: int = Query(10)):
+    """Return trending articles from popular networks"""
+    if not TRENDING_FEED_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Trending feed library not installed")
+    return get_trending_feed(limit)
 
 @app.get("/api/discovery-signals")
 async def get_discovery_signals():
