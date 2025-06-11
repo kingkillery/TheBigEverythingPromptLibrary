@@ -11,9 +11,10 @@ from typing import List, Dict, Optional, Any
 from pathlib import Path
 from datetime import datetime
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
@@ -58,6 +59,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Template & static file support
+templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
+
 class PromptItem(BaseModel):
     id: str
     title: str
@@ -80,6 +85,15 @@ class SearchResponse(BaseModel):
 class ConfigUpdate(BaseModel):
     stop_words: Optional[List[str]] = None
     weights: Optional[Dict[str, float]] = None
+
+class ChatRequest(BaseModel):
+    prompt: str
+    max_results: int = 5
+
+class ChatResponse(BaseModel):
+    matches: List[PromptItem]
+    optimized_prompt: str
+    tweaked_match: str
 
 class IndexManager:
     """Manages the search index for all prompt content"""
@@ -402,505 +416,9 @@ class IndexManager:
 index_manager = IndexManager()
 
 @app.get("/")
-async def read_root():
+async def read_root(request: Request):
     """Serve the frontend HTML"""
-    html_content = """
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>The Big Everything Prompt Library</title>
-        <script src="https://unpkg.com/marked/marked.min.js"></script>
-        <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; }
-            .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-            .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-            .search-section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-            .search-input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 16px; margin-bottom: 15px; }
-            .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 15px; }
-            .filter-select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; background: white; }
-            .quality-slider { width: 100%; margin: 10px 0; }
-            .advanced-filters { display: none; margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; }
-            .toggle-filters { color: #2563eb; cursor: pointer; text-decoration: underline; font-size: 14px; }
-            .results { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-            .result-item { padding: 20px; border-bottom: 1px solid #eee; position: relative; }
-            .result-item:last-child { border-bottom: none; }
-            .result-item.high-quality { border-left: 4px solid #10b981; }
-            .result-item.medium-quality { border-left: 4px solid #f59e0b; }
-            .result-item.low-quality { border-left: 4px solid #ef4444; }
-            .result-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #2563eb; }
-            .result-meta { font-size: 12px; color: #666; margin-bottom: 8px; display: flex; gap: 15px; align-items: center; }
-            .result-description { margin-bottom: 10px; }
-            .result-tags { display: flex; gap: 5px; flex-wrap: wrap; }
-            .tag { background: #e5e7eb; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
-            .quality-badge { padding: 2px 6px; border-radius: 10px; font-size: 11px; font-weight: 600; }
-            .quality-high { background: #d1fae5; color: #065f46; }
-            .quality-medium { background: #fef3c7; color: #92400e; }
-            .quality-low { background: #fee2e2; color: #991b1b; }
-            .search-stats { background: #f3f4f6; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; }
-            .loading { text-align: center; padding: 40px; color: #666; }
-            .stats { font-size: 14px; color: #666; margin-bottom: 15px; }
-            .refresh-btn { background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
-            .llm-btn { background: #10b981; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 5px; }
-            .llm-section { background: #f9f9f9; padding: 15px; margin-top: 10px; border-radius: 6px; border-left: 4px solid #10b981; }
-            .llm-result { background: white; padding: 10px; border-radius: 4px; margin: 10px 0; white-space: pre-wrap; }
-            .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
-            .modal-content { background: white; margin: 5% auto; padding: 20px; border-radius: 8px; max-width: 800px; max-height: 80%; overflow-y: auto; }
-            @media (max-width: 768px) { .filters { flex-direction: column; } .filter-select { width: 100%; } }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1>🚀 The Big Everything Prompt Library</h1>
-                <p>Search through 1,800+ high-quality prompts, guides, and AI resources with advanced filtering</p>
-                <div style="font-size: 14px; color: #666; margin-top: 10px;">
-                    ✨ Enhanced with quality scoring, fuzzy search, and semantic matching
-                </div>
-            </div>
-            
-            <div class="search-section">
-                <input type="text" id="searchInput" class="search-input" placeholder="Search prompts, guides, articles...">
-                
-                <div class="filters">
-                    <select id="categoryFilter" class="filter-select">
-                        <option value="">All Categories</option>
-                    </select>
-                    <select id="tagFilter" class="filter-select">
-                        <option value="">All Tags</option>
-                    </select>
-                    <select id="sortFilter" class="filter-select">
-                        <option value="relevance">Sort: Relevance</option>
-                        <option value="quality">Sort: Quality</option>
-                        <option value="title">Sort: Title</option>
-                        <option value="newest">Sort: Newest</option>
-                    </select>
-                    <button id="refreshBtn" class="refresh-btn">Refresh Index</button>
-                    <span class="toggle-filters" onclick="toggleAdvancedFilters()">🔧 Advanced Filters</span>
-                </div>
-                
-                <div id="advancedFilters" class="advanced-filters">
-                    <label for="qualitySlider">Minimum Quality Score: <span id="qualityValue">0.0</span></label>
-                    <input type="range" id="qualitySlider" class="quality-slider" min="0" max="1" step="0.1" value="0">
-                    <div style="margin-top: 10px;">
-                        <label><input type="checkbox" id="highQualityOnly"> High Quality Only (0.7+)</label>
-                    </div>
-                </div>
-                
-                <div id="stats" class="stats"></div>
-                <div id="searchStats" class="search-stats" style="display: none;"></div>
-            </div>
-            
-            <div id="results" class="results">
-                <div class="loading">Loading prompts...</div>
-            </div>
-        </div>
-        
-        <!-- LLM Enhancement Modal -->
-        <div id="llmModal" class="modal">
-            <div class="modal-content">
-                <h3>🤖 AI Enhancement Tools</h3>
-                <div id="llmContent"></div>
-                <button onclick="closeLLMModal()" style="margin-top: 20px; padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer;">Close</button>
-            </div>
-        </div>
-
-        <script>
-            let searchTimeout;
-            let currentResults = [];
-            
-            // API calls
-            async function searchPrompts(query = '', category = '', tag = '', minQuality = 0.0, sortBy = 'relevance') {
-                const params = new URLSearchParams();
-                if (query) params.append('query', query);
-                if (category) params.append('category', category);
-                if (tag) params.append('tags', tag);
-                if (minQuality > 0) params.append('min_quality', minQuality);
-                if (sortBy !== 'relevance') params.append('sort_by', sortBy);
-                
-                const response = await fetch(`/api/search?${params}`);
-                return await response.json();
-            }
-            
-            function toggleAdvancedFilters() {
-                const filters = document.getElementById('advancedFilters');
-                filters.style.display = filters.style.display === 'none' ? 'block' : 'none';
-            }
-            
-            async function getCategories() {
-                const response = await fetch('/api/categories');
-                return await response.json();
-            }
-            
-            async function getTags() {
-                const response = await fetch('/api/tags');
-                return await response.json();
-            }
-            
-            async function refreshIndex() {
-                const response = await fetch('/api/refresh', { method: 'POST' });
-                return await response.json();
-            }
-            
-            // LLM API calls
-            async function enhancePrompt(prompt, type = 'improve') {
-                const response = await fetch('/api/llm/enhance', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt, type })
-                });
-                return await response.json();
-            }
-            
-            async function analyzePrompt(prompt, includeAll = false) {
-                const response = await fetch('/api/llm/analyze', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt, include_all: includeAll })
-                });
-                return await response.json();
-            }
-            
-            async function generateTags(prompt, title = '') {
-                const response = await fetch('/api/llm/generate-tags', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt, title })
-                });
-                return await response.json();
-            }
-            
-            async function checkLLMAvailable() {
-                try {
-                    const response = await fetch('/api/llm/models');
-                    return response.ok;
-                } catch {
-                    return false;
-                }
-            }
-            
-            // UI functions
-            function renderResults(data) {
-                const resultsDiv = document.getElementById('results');
-                const statsDiv = document.getElementById('stats');
-                const searchStatsDiv = document.getElementById('searchStats');
-                
-                statsDiv.textContent = `Found ${data.total} results`;
-                
-                // Show enhanced search stats if available
-                if (data.filters && data.filters.search_stats) {
-                    const stats = data.filters.search_stats;
-                    searchStatsDiv.innerHTML = `
-                        <strong>Search Analysis:</strong> 
-                        Average Quality: ${(stats.avg_quality * 100).toFixed(0)}% | 
-                        High Quality: ${stats.quality_distribution.high} items | 
-                        Keywords: ${stats.query_keywords.join(', ')}
-                    `;
-                    searchStatsDiv.style.display = 'block';
-                } else {
-                    searchStatsDiv.style.display = 'none';
-                }
-                
-                if (data.items.length === 0) {
-                    resultsDiv.innerHTML = '<div class="loading">No results found. Try adjusting your filters or search terms.</div>';
-                    return;
-                }
-                
-                const html = data.items.map(item => {
-                    // Calculate quality score for display (if enhanced search is available)
-                    const qualityClass = getQualityClass(item);
-                    const qualityBadge = getQualityBadge(item);
-                    
-                    return `
-                        <div class="result-item ${qualityClass}">
-                            <div class="result-title">${escapeHtml(item.title)}</div>
-                            <div class="result-meta">
-                                <span>${item.category}${item.subcategory ? ` > ${item.subcategory}` : ''}</span>
-                                <span>${item.version ? `v${item.version}` : ''}</span>
-                                ${qualityBadge}
-                                <span id="llm-buttons-${item.id}"></span>
-                            </div>
-                            <div class="result-description">${escapeHtml(item.description)}</div>
-                            <div class="result-tags">
-                                ${item.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                
-                resultsDiv.innerHTML = html;
-                
-                // Add LLM buttons if available
-                addLLMButtons(data.items);
-            }
-            
-            function getQualityClass(item) {
-                // Simple heuristic for quality classification
-                const contentLength = item.content.length;
-                const hasStructure = item.content.includes('#') || item.content.includes('1.') || item.content.includes('-');
-                const detailedDescription = item.description.length > 50;
-                
-                if (contentLength > 800 && hasStructure && detailedDescription) return 'high-quality';
-                if (contentLength > 300 && (hasStructure || detailedDescription)) return 'medium-quality';
-                return 'low-quality';
-            }
-            
-            function getQualityBadge(item) {
-                const qualityClass = getQualityClass(item);
-                if (qualityClass === 'high-quality') return '<span class="quality-badge quality-high">High Quality</span>';
-                if (qualityClass === 'medium-quality') return '<span class="quality-badge quality-medium">Medium Quality</span>';
-                return '<span class="quality-badge quality-low">Basic</span>';
-            }
-            
-            async function addLLMButtons(items) {
-                const llmAvailable = await checkLLMAvailable();
-                if (!llmAvailable) return;
-                
-                items.forEach(item => {
-                    const buttonContainer = document.getElementById(`llm-buttons-${item.id}`);
-                    if (buttonContainer) {
-                        buttonContainer.innerHTML = `
-                            <button class="llm-btn" onclick="showLLMEnhancement('${item.id}', '${escapeHtml(item.title)}', '${escapeHtml(item.content).substring(0, 500)}')">
-                                🤖 Enhance
-                            </button>
-                        `;
-                    }
-                });
-            }
-            
-            function showLLMEnhancement(itemId, title, content) {
-                const modal = document.getElementById('llmModal');
-                const modalContent = document.getElementById('llmContent');
-                
-                modalContent.innerHTML = `
-                    <h4>Enhancing: ${title}</h4>
-                    <div class="llm-section">
-                        <button onclick="performLLMAction('${itemId}', '${escapeHtml(content)}', 'analyze')" class="llm-btn">
-                            🔍 Analyze Prompt
-                        </button>
-                        <button onclick="performLLMAction('${itemId}', '${escapeHtml(content)}', 'improve')" class="llm-btn">
-                            ✨ Improve
-                        </button>
-                        <button onclick="performLLMAction('${itemId}', '${escapeHtml(content)}', 'variants')" class="llm-btn">
-                            🔄 Create Variants
-                        </button>
-                        <button onclick="performLLMAction('${itemId}', '${escapeHtml(content)}', 'tags')" class="llm-btn">
-                            🏷️ Generate Tags
-                        </button>
-                    </div>
-                    <div id="llm-results-${itemId}"></div>
-                `;
-                
-                modal.style.display = 'block';
-            }
-            
-            async function performLLMAction(itemId, content, action) {
-                const resultsDiv = document.getElementById(`llm-results-${itemId}`);
-                resultsDiv.innerHTML = '<div class="loading">🤖 AI is working...</div>';
-                
-                try {
-                    let result;
-                    
-                    switch(action) {
-                        case 'analyze':
-                            result = await analyzePrompt(content, true);
-                            displayAnalysisResult(resultsDiv, result);
-                            break;
-                        case 'improve':
-                            result = await enhancePrompt(content, 'improve');
-                            displayEnhancementResult(resultsDiv, result);
-                            break;
-                        case 'variants':
-                            result = await enhancePrompt(content, 'variants');
-                            displayEnhancementResult(resultsDiv, result);
-                            break;
-                        case 'tags':
-                            result = await generateTags(content);
-                            displayTagsResult(resultsDiv, result);
-                            break;
-                    }
-                } catch (error) {
-                    resultsDiv.innerHTML = `<div class="llm-result">❌ Error: ${error.message}</div>`;
-                }
-            }
-            
-            function displayAnalysisResult(container, result) {
-                let html = '<div class="llm-section"><h5>🔍 AI Analysis Results:</h5>';
-                
-                if (result.enhancement) {
-                    html += `<div class="llm-result"><strong>Enhancement Suggestions:</strong><br>${result.enhancement.enhanced_content}</div>`;
-                }
-                
-                if (result.suggested_tags) {
-                    html += `<div class="llm-result"><strong>Suggested Tags:</strong><br>${result.suggested_tags.join(', ')}</div>`;
-                }
-                
-                if (result.detected_type) {
-                    html += `<div class="llm-result"><strong>Detected Type:</strong> ${result.detected_type}</div>`;
-                }
-                
-                if (result.use_cases) {
-                    html += `<div class="llm-result"><strong>Use Cases:</strong><br>• ${result.use_cases.join('<br>• ')}</div>`;
-                }
-                
-                html += '</div>';
-                container.innerHTML = html;
-            }
-            
-            function displayEnhancementResult(container, result) {
-                if (result && result.enhanced_content) {
-                    container.innerHTML = `
-                        <div class="llm-section">
-                            <h5>✨ Enhanced Version:</h5>
-                            <div class="llm-result">${result.enhanced_content}</div>
-                            <small>Generated by: ${result.model_used}</small>
-                        </div>
-                    `;
-                } else {
-                    container.innerHTML = '<div class="llm-result">❌ Enhancement failed</div>';
-                }
-            }
-            
-            function displayTagsResult(container, result) {
-                if (result && result.tags) {
-                    const tagsHtml = result.tags.map(tag => `<span class="tag">${tag}</span>`).join(' ');
-                    container.innerHTML = `
-                        <div class="llm-section">
-                            <h5>🏷️ Generated Tags:</h5>
-                            <div class="llm-result">${tagsHtml}</div>
-                        </div>
-                    `;
-                } else {
-                    container.innerHTML = '<div class="llm-result">❌ Tag generation failed</div>';
-                }
-            }
-            
-            function closeLLMModal() {
-                document.getElementById('llmModal').style.display = 'none';
-            }
-            
-            // Close modal when clicking outside
-            window.onclick = function(event) {
-                const modal = document.getElementById('llmModal');
-                if (event.target === modal) {
-                    modal.style.display = 'none';
-                }
-            }
-            
-            function escapeHtml(text) {
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
-            }
-            
-            async function populateFilters() {
-                const [categories, tags] = await Promise.all([getCategories(), getTags()]);
-                
-                const categorySelect = document.getElementById('categoryFilter');
-                Object.entries(categories).forEach(([cat, count]) => {
-                    const option = document.createElement('option');
-                    option.value = cat;
-                    option.textContent = `${cat} (${count})`;
-                    categorySelect.appendChild(option);
-                });
-                
-                const tagSelect = document.getElementById('tagFilter');
-                Object.entries(tags)
-                    .sort((a, b) => b[1] - a[1])  // Sort by count
-                    .slice(0, 20)  // Top 20 tags
-                    .forEach(([tag, count]) => {
-                        const option = document.createElement('option');
-                        option.value = tag;
-                        option.textContent = `${tag} (${count})`;
-                        tagSelect.appendChild(option);
-                    });
-            }
-            
-            function performSearch() {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(async () => {
-                    const query = document.getElementById('searchInput').value;
-                    const category = document.getElementById('categoryFilter').value;
-                    const tag = document.getElementById('tagFilter').value;
-                    const sortBy = document.getElementById('sortFilter').value;
-                    
-                    // Get quality filters
-                    let minQuality = 0.0;
-                    const qualitySlider = document.getElementById('qualitySlider');
-                    const highQualityOnly = document.getElementById('highQualityOnly');
-                    
-                    if (qualitySlider) {
-                        minQuality = parseFloat(qualitySlider.value);
-                    }
-                    if (highQualityOnly && highQualityOnly.checked) {
-                        minQuality = Math.max(minQuality, 0.7);
-                    }
-                    
-                    try {
-                        const results = await searchPrompts(query, category, tag, minQuality, sortBy);
-                        renderResults(results);
-                    } catch (error) {
-                        console.error('Search error:', error);
-                        document.getElementById('results').innerHTML = '<div class="loading">Search error occurred</div>';
-                    }
-                }, 300);
-            }
-            
-            // Event listeners
-            document.getElementById('searchInput').addEventListener('input', performSearch);
-            document.getElementById('categoryFilter').addEventListener('change', performSearch);
-            document.getElementById('tagFilter').addEventListener('change', performSearch);
-            document.getElementById('sortFilter').addEventListener('change', performSearch);
-            
-            // Quality filter listeners
-            document.addEventListener('DOMContentLoaded', function() {
-                const qualitySlider = document.getElementById('qualitySlider');
-                const qualityValue = document.getElementById('qualityValue');
-                const highQualityOnly = document.getElementById('highQualityOnly');
-                
-                if (qualitySlider) {
-                    qualitySlider.addEventListener('input', function() {
-                        qualityValue.textContent = this.value;
-                        performSearch();
-                    });
-                }
-                
-                if (highQualityOnly) {
-                    highQualityOnly.addEventListener('change', performSearch);
-                }
-            });
-            
-            document.getElementById('refreshBtn').addEventListener('click', async () => {
-                const btn = document.getElementById('refreshBtn');
-                btn.textContent = 'Refreshing...';
-                btn.disabled = true;
-                
-                try {
-                    await refreshIndex();
-                    await populateFilters();
-                    performSearch();
-                } catch (error) {
-                    console.error('Refresh error:', error);
-                } finally {
-                    btn.textContent = 'Refresh Index';
-                    btn.disabled = false;
-                }
-            });
-            
-            // Initialize
-            async function init() {
-                await populateFilters();
-                performSearch();
-            }
-            
-            init();
-        </script>
-    </body>
-    </html>
-    """
-    return HTMLResponse(content=html_content)
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/api/ping")
 async def ping():
@@ -1220,6 +738,46 @@ async def analyze_search_results(
     analysis = index_manager.enhanced_search.analyze_search_quality(search_results.items, query)
     
     return {"analysis": analysis, "available": True}
+
+@app.post("/api/chat/process", response_model=ChatResponse)
+async def chat_process(request: ChatRequest):
+    """Process user prompt: return similar library prompts, optimized prompt, tweaked top match"""
+    user_prompt = request.prompt.strip()
+    max_results = max(1, min(request.max_results, 10))  # safety bounds
+
+    if not user_prompt:
+        raise HTTPException(status_code=400, detail="Prompt is required")
+
+    # 1. Find similar prompts
+    search_resp = index_manager.search(query=user_prompt, limit=max_results)
+    matches = search_resp.items
+
+    optimized_prompt: str = ""
+    tweaked_match: str = ""
+
+    if index_manager.llm_connector:
+        try:
+            enh = await index_manager.llm_connector.enhance_prompt(user_prompt, "improve")
+            if isinstance(enh, dict):
+                optimized_prompt = enh.get("enhanced_content", "")
+        except Exception:
+            pass
+
+        # Tweak top match for user use-case
+        if matches:
+            try:
+                top_content = matches[0].content
+                tweak = await index_manager.llm_connector.enhance_prompt(top_content, "improve")
+                if isinstance(tweak, dict):
+                    tweaked_match = tweak.get("enhanced_content", "")
+            except Exception:
+                pass
+
+    return ChatResponse(
+        matches=matches,
+        optimized_prompt=optimized_prompt,
+        tweaked_match=tweaked_match,
+    )
 
 if __name__ == "__main__":
     import uvicorn
