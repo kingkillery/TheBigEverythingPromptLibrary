@@ -421,11 +421,12 @@ class IndexManager:
         return [item for score, item in scored_results]
     
     def get_categories(self) -> Dict[str, int]:
-        """Get all categories with counts"""
-        categories = {}
+        """Get all categories with counts; include expected categories with zero items"""
+        counts: Dict[str, int] = {c: 0 for c in getattr(self, "_expected_categories", [])}
         for item in self.index:
-            categories[item.category] = categories.get(item.category, 0) + 1
-        return categories
+            counts[item.category] = counts.get(item.category, 0) + 1
+        # Sort alphabetically for stable dropdown order
+        return dict(sorted(counts.items()))
     
     def get_tags(self) -> Dict[str, int]:
         """Get all tags with counts"""

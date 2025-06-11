@@ -238,6 +238,7 @@ async function search() {
         'Business': 'bg-green-100 text-green-700',
         'Creative': 'bg-pink-100 text-pink-700',
         'Analysis': 'bg-orange-100 text-orange-700',
+        'DeepResearch': 'bg-amber-100 text-amber-700',
         'default': 'bg-gray-100 text-gray-700'
       };
       
