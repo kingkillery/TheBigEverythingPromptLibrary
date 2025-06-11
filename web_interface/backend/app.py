@@ -11,7 +11,7 @@ from typing import List, Dict, Optional, Any
 from pathlib import Path
 from datetime import datetime
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -47,6 +47,15 @@ try:
 except ImportError:
     LLM_CONNECTOR_AVAILABLE = False
     print("LLM connector not available. Install with: pip install httpx")
+
+# Add collections_db helper
+from collections_db import (
+    create_collection,
+    list_collections,
+    add_item as db_add_item,
+    remove_item as db_remove_item,
+    get_collection_items,
+)
 
 app = FastAPI(title="Prompt Library API", version="1.0.0")
 
@@ -831,6 +840,69 @@ async def set_llm_api_key(request: ApiKeyRequest):
 
     index_manager.llm_connector = connector
     return {"status": "success", "message": "API key updated and LLM connector initialised"}
+
+# ---------------------- Collections (Garden Beds) ------------------------
+
+class CollectionCreate(BaseModel):
+    name: str
+
+class AddItemRequest(BaseModel):
+    prompt_id: str
+
+class CollectionDetail(BaseModel):
+    id: int
+    name: str
+    items: List[str]
+
+@app.get("/api/collections", response_model=List[Dict[str, Any]])
+async def get_collections(user_id: str = Header(..., alias="X-User-Id")):
+    """Return all collections for the given user"""
+    return list_collections(user_id)
+
+@app.post("/api/collections", status_code=201)
+async def create_collection_endpoint(
+    payload: CollectionCreate,
+    user_id: str = Header(..., alias="X-User-Id"),
+):
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Collection name required")
+    col_id = create_collection(user_id, name)
+    return {"id": col_id, "name": name}
+
+@app.get("/api/collections/{collection_id}", response_model=CollectionDetail)
+async def get_collection_endpoint(collection_id: int, user_id: str = Header(..., alias="X-User-Id")):
+    # Verify collection belongs to user
+    cols = list_collections(user_id)
+    if not any(c["id"] == collection_id for c in cols):
+        raise HTTPException(status_code=404, detail="Collection not found")
+    items = get_collection_items(collection_id)
+    name = next(c["name"] for c in cols if c["id"] == collection_id)
+    return CollectionDetail(id=collection_id, name=name, items=items)
+
+@app.post("/api/collections/{collection_id}/items", status_code=204)
+async def add_item_endpoint(
+    collection_id: int,
+    payload: AddItemRequest,
+    user_id: str = Header(..., alias="X-User-Id"),
+):
+    cols = list_collections(user_id)
+    if not any(c["id"] == collection_id for c in cols):
+        raise HTTPException(status_code=404, detail="Collection not found")
+    db_add_item(collection_id, payload.prompt_id)
+    return {"status": "added"}
+
+@app.delete("/api/collections/{collection_id}/items/{prompt_id}", status_code=204)
+async def remove_item_endpoint(
+    collection_id: int,
+    prompt_id: str,
+    user_id: str = Header(..., alias="X-User-Id"),
+):
+    cols = list_collections(user_id)
+    if not any(c["id"] == collection_id for c in cols):
+        raise HTTPException(status_code=404, detail="Collection not found")
+    db_remove_item(collection_id, prompt_id)
+    return {"status": "removed"}
 
 if __name__ == "__main__":
     import uvicorn

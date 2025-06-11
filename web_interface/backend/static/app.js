@@ -1,6 +1,6 @@
 // Basic search functionality for new UI
-async function fetchJSON(url) {
-  const res = await fetch(url);
+async function fetchJSON(url, options = {}) {
+  const res = await fetch(url, options);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -64,14 +64,14 @@ async function search() {
   if (category) params.append("category", category);
   const data = await fetchJSON(`/api/search?${params}`);
 
-  document.getElementById("stats").textContent = `Found ${data.total} items`;
+  document.getElementById("stats").textContent = `🌸 ${data.total} blossoms in bloom`;
   const container = document.getElementById("results");
   container.innerHTML = "";
   data.items.forEach((item) => {
     const div = document.createElement("div");
     div.className = "p-4 bg-white/60 backdrop-blur-md border border-gray-200 rounded-xl shadow-md hover:shadow-xl hover:border-indigo-400 hover:-translate-y-1 transform transition duration-300 cursor-pointer";
-    div.innerHTML = `<h2 class='font-semibold text-lg text-blue-600'>${item.title}</h2>
-      <p class='text-sm text-gray-500 mb-2'>${item.category}</p>
+    div.innerHTML = `<h2 class='font-semibold text-lg text-green-700'>${item.title}</h2>
+      <p class='text-sm text-emerald-600 mb-2'>${item.category}</p>
       <p>${item.description}</p>`;
     // Attach click handler to load full prompt
     div.addEventListener("click", () => showPrompt(item.id));
@@ -167,6 +167,36 @@ function renderPromptModal(item) {
   closeBtn.addEventListener("click", () => overlay.remove());
   actions.appendChild(closeBtn);
 
+  // Add to My Bed button
+  const addBtn = document.createElement("button");
+  addBtn.className = "px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm";
+  addBtn.textContent = "Add to My Bed";
+  addBtn.addEventListener("click", async () => {
+    try {
+      const userId = getUserId();
+      // Fetch collections (simple, pick first)
+      const colsRes = await fetch("/api/collections", { headers: { "X-User-Id": userId } });
+      const cols = colsRes.ok ? await colsRes.json() : [];
+      const target = cols[0];
+      if (!target) {
+        alert("No collection found.");
+        return;
+      }
+      await fetch(`/api/collections/${target.id}/items`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Id": userId,
+        },
+        body: JSON.stringify({ prompt_id: item.id }),
+      });
+      addBtn.textContent = "Added!";
+    } catch {
+      alert("Failed to add to collection");
+    }
+  });
+  actions.appendChild(addBtn);
+
   modal.appendChild(actions);
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
@@ -252,7 +282,7 @@ function renderChatOutput(data) {
   if (data.matches && data.matches.length) {
     const matchesHeader = document.createElement("h3");
     matchesHeader.className = "font-semibold mt-4 mb-2";
-    matchesHeader.textContent = "Similar Prompts";
+    matchesHeader.textContent = "More blossoms to explore";
     container.appendChild(matchesHeader);
 
     data.matches.forEach((item) => {
@@ -303,3 +333,31 @@ window.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("chatProcessBtn");
   if (btn) btn.addEventListener("click", processPrompt);
 });
+
+// Utility: get or generate userId stored locally
+function getUserId() {
+  let uid = localStorage.getItem("gardenUserId");
+  if (!uid) {
+    uid = crypto.randomUUID();
+    localStorage.setItem("gardenUserId", uid);
+  }
+  return uid;
+}
+
+async function ensureDefaultCollection() {
+  const userId = getUserId();
+  const res = await fetch("/api/collections", { headers: { "X-User-Id": userId } });
+  const cols = res.ok ? await res.json() : [];
+  if (!cols.length) {
+    await fetch("/api/collections", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-User-Id": userId,
+      },
+      body: JSON.stringify({ name: "My Garden Bed" }),
+    });
+  }
+}
+// Call once on load to ensure user has at least one collection
+ensureDefaultCollection().catch(() => {});
