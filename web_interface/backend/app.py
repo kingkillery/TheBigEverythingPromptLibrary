@@ -1330,6 +1330,26 @@ async def execute_chain(
         "final_output": results[-1]['output'] if results else None
     }
 
+# ---------------------- Prompt Quality Grading ---------------------------
+
+class PromptGradeRequest(BaseModel):
+    prompt: str
+    model: Optional[str] = "gpt-4o"
+    use_llm: Optional[bool] = True
+
+@app.post("/api/prompt/grade")
+async def grade_prompt_endpoint(payload: PromptGradeRequest):
+    """Grade a prompt's quality using heuristics and, if configured, an LLM self-evaluation."""
+    from prompt_quality_grader import PromptGrader  # local import to avoid circular deps
+
+    grader = PromptGrader(index_manager.llm_connector)
+    result = grader.grade(
+        payload.prompt,
+        model=payload.model or "gpt-4o",
+        use_llm=payload.use_llm,
+    )
+    return result
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

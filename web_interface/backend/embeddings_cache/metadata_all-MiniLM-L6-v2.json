@@ -1531,6 +1531,7 @@
     "Guides_06092025-openai-function-calls-reasoning-models-guide",
     "Guides_06092025-openai-meta-prompting-guide",
     "Guides_06102025-claude-classification-techniques-comprehensive-guide",
+    "Guides_06102025-claude-customer-service-agent-comprehensive-guide",
     "Guides_06102025-claude-rag-implementation-comprehensive-guide",
     "Guides_06102025-cross-platform-prompt-engineering-comprehensive-comparison",
     "Guides_06102025-fine-tune-chatbot-docs-synthetic-data",
@@ -1696,8 +1697,8 @@
     "Jailbreak_jb1"
   ],
   "embedding_shape": [
-    1693,
+    1694,
     384
   ],
-  "created_at": "2025-06-11T05:41:15"
+  "created_at": "2025-06-11T05:47:39"
 }
