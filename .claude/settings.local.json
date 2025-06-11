@@ -12,7 +12,8 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:cookbook.openai.com)",
       "WebFetch(domain:huggingface.co)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:huggingface.co)"
     ],
     "deny": []
   }

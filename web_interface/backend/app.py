@@ -987,7 +987,7 @@ async def rename_collection_endpoint(
     return {"id": collection_id, "name": new_name}
 
 
-@app.delete("/api/collections/{collection_id}", status_code=204)
+@app.delete("/api/collections/{collection_id}")
 async def delete_collection_endpoint(
     collection_id: int,
     user_id: str = Header(..., alias="X-User-Id"),
