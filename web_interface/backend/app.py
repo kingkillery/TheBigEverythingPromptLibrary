@@ -21,6 +21,8 @@ from pydantic import BaseModel
 # Add the scripts directory to path to import gptparser
 REPO_ROOT = Path(__file__).parent.parent.parent
 sys.path.append(str(REPO_ROOT / ".scripts"))
+# Ensure backend directory is on import path for sibling modules like collections_db
+sys.path.append(str(Path(__file__).parent))
 
 import gptparser
 
