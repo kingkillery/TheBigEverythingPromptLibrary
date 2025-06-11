@@ -20,6 +20,14 @@ AI_FEEDS = {
     "flipboard_ai": "https://flipboard.com/topic/artificialintelligence.rss",
     # Bluesky via rsshub proxy (public, no auth)
     "bluesky_ai": "https://rsshub.app/bluesky/tag/ai",
+    # Medium tag feed for AI-related stories
+    "medium_ai": "https://medium.com/feed/tag/artificial-intelligence",
+    # OpenAI official blog (Ghost platform)
+    "openai_blog": "https://openai.com/blog/rss",
+    # Anthropic blog (Ghost platform) – if 404s, simply ignored by parser
+    "anthropic_blog": "https://www.anthropic.com/news/rss",
+    # Hugging Face blog (Ghost platform)
+    "huggingface_blog": "https://huggingface.co/blog/rss",
 }
 
 CACHE_TTL = 60 * 30  # 30 minutes
@@ -36,35 +44,76 @@ class RSSFetcher:
         self._lock = threading.Lock()
 
     def _parse_feed(self, url: str) -> List[Dict[str, Any]]:
-        entries = []
+        """Parse a single RSS/Atom feed and return up-to-date entries sorted by
+        publish date (most recent first). We restrict to 25 items per feed to
+        keep things light.
+        """
+        entries: List[Dict[str, Any]] = []
         d = feedparser.parse(url)
-        if d.bozo:  # fallback fetch raw
+        if d.bozo:  # if parser complains, try fetching raw text first
             try:
-                r = requests.get(url, timeout=10)
-                d = feedparser.parse(r.text)
+                resp = requests.get(url, timeout=10)
+                d = feedparser.parse(resp.text)
             except Exception:
                 return []
+
         for e in d.entries[:25]:
+            published_ts = 0
+            if "published_parsed" in e and e.published_parsed:
+                try:
+                    published_ts = time.mktime(e.published_parsed)
+                except Exception:
+                    published_ts = 0
+
             entries.append({
                 "title": e.get("title", ""),
                 "link": e.get("link", ""),
                 "published": e.get("published", ""),
+                "published_ts": published_ts,
                 "source": url,
             })
+
+        # newest first within each feed
+        entries.sort(key=lambda x: x.get("published_ts", 0), reverse=True)
         return entries
 
     def get_ai_news(self) -> List[Dict[str, Any]]:
+        """Return a *diverse* list of AI news items.
+
+        We merge cached feeds but mix them round-robin so that no single
+        publication dominates the results. This guarantees a spread of sources
+        irrespective of which ones publish most frequently (e.g. Medium).
+        """
         now = time.time()
-        items: List[Dict[str, Any]] = []
         with self._lock:
+            # Ensure cache is up-to-date
             for name, url in AI_FEEDS.items():
                 entry = self._cache.get(name)
                 if not entry or now - entry.ts > CACHE_TTL:
                     parsed = self._parse_feed(url)
                     self._cache[name] = _CacheEntry(parsed, now)
-                items.extend(self._cache[name].items)
-        # sort newest first (if published present)
-        items.sort(key=lambda x: x.get("published", ""), reverse=True)
-        return items[:50]
+
+            # Create per-source queues (copy lists so we can pop without
+            # mutating cache)
+            feed_queues: Dict[str, List[Dict[str, Any]]] = {
+                name: list(self._cache[name].items) for name in AI_FEEDS.keys()
+            }
+
+        # Round-robin combine to promote diversity
+        combined: List[Dict[str, Any]] = []
+        limit = 50
+        while len(combined) < limit:
+            made_progress = False
+            for name in AI_FEEDS.keys():
+                q = feed_queues.get(name, [])
+                if q:
+                    combined.append(q.pop(0))
+                    made_progress = True
+                    if len(combined) >= limit:
+                        break
+            if not made_progress:
+                break  # all queues empty
+
+        return combined
 
 rss_fetcher = RSSFetcher() 

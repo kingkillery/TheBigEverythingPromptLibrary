@@ -1274,7 +1274,18 @@ function renderAiNews(items) {
     panel = document.createElement('div');
     panel.id = containerId;
     panel.className = 'mt-10';
-    document.getElementById('sidebar')?.appendChild(panel);
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+      sidebar.appendChild(panel);
+    } else {
+      // fallback: insert after discovery signals or at end of body
+      const discovery = document.getElementById('discoverySignals');
+      if (discovery && discovery.parentNode) {
+        discovery.parentNode.insertBefore(panel, discovery.nextSibling);
+      } else {
+        document.body.appendChild(panel);
+      }
+    }
   }
   panel.innerHTML = `
     <h3 class="text-lg font-bold mb-3">📰 AI News</h3>
@@ -1285,3 +1296,9 @@ function renderAiNews(items) {
 
 // call on load
 loadAiNews();
+
+// ---------------- Self-trigger the DOMContentLoaded setup if the document has already loaded ----------------
+if (document.readyState !== "loading") {
+  // The script was loaded after DOMContentLoaded; fire the event handler manually so UI hooks attach.
+  window.dispatchEvent(new Event("DOMContentLoaded"));
+}
