@@ -29,7 +29,7 @@ async function search() {
   container.innerHTML = "";
   data.items.forEach((item) => {
     const div = document.createElement("div");
-    div.className = "p-4 bg-white rounded-md shadow cursor-pointer hover:bg-gray-50";
+    div.className = "p-4 bg-white/60 backdrop-blur-md border border-gray-200 rounded-xl shadow-md hover:shadow-xl hover:border-indigo-400 hover:-translate-y-1 transform transition duration-300 cursor-pointer";
     div.innerHTML = `<h2 class='font-semibold text-lg text-blue-600'>${item.title}</h2>
       <p class='text-sm text-gray-500 mb-2'>${item.category}</p>
       <p>${item.description}</p>`;
@@ -80,11 +80,11 @@ function renderPromptModal(item) {
 
   // Modal content
   const modal = document.createElement("div");
-  modal.className = "bg-white w-11/12 sm:w-3/4 lg:w-1/2 max-h-[80vh] overflow-y-auto p-6 rounded-md shadow-lg";
+  modal.className = "bg-white/90 backdrop-blur-lg w-11/12 sm:w-3/4 lg:w-1/2 max-h-[80vh] overflow-y-auto p-8 rounded-xl shadow-2xl border border-indigo-200";
 
   // Title
   const title = document.createElement("h2");
-  title.className = "text-xl font-bold mb-4";
+  title.className = "text-2xl font-extrabold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent mb-4";
   title.textContent = item.title || "Prompt";
   modal.appendChild(title);
 
@@ -161,7 +161,7 @@ function renderChatOutput(data) {
 
     data.matches.forEach((item) => {
       const div = document.createElement("div");
-      div.className = "p-4 bg-white rounded-md shadow cursor-pointer hover:bg-gray-50";
+      div.className = "p-4 bg-white/60 backdrop-blur-md border border-gray-200 rounded-xl shadow-md hover:shadow-xl hover:border-indigo-400 hover:-translate-y-1 transform transition duration-300 cursor-pointer";
       div.innerHTML = `<h4 class='font-semibold text-blue-600'>${item.title}</h4>
         <p class='text-sm text-gray-500 mb-2'>${item.category}</p>
         <p>${item.description}</p>`;
