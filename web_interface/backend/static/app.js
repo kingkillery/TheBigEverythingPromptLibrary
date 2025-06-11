@@ -116,6 +116,16 @@ async function postJSON(url, body) {
   return res.json();
 }
 
+// Helper: Convert markdown to HTML (uses marked.js if available, otherwise fallback)
+function formatMarkdown(md) {
+  if (!md) return "";
+  if (typeof window !== "undefined" && window.marked) {
+    return window.marked.parse(md);
+  }
+  // Fallback: simple newline to <br> replacement
+  return md.replace(/\n/g, "<br>");
+}
+
 // Process prompt via /api/chat/process and render output
 async function processPrompt() {
   const prompt = document.getElementById("chatPrompt").value.trim();
@@ -140,7 +150,7 @@ function renderChatOutput(data) {
   if (data.optimized_prompt) {
     const optDiv = document.createElement("div");
     optDiv.className = "p-4 bg-white rounded-md shadow";
-    optDiv.innerHTML = `<h3 class='font-semibold mb-2 text-green-700'>Optimized Prompt</h3><pre class='whitespace-pre-wrap text-sm'>${data.optimized_prompt}</pre>`;
+    optDiv.innerHTML = `<h3 class='font-semibold mb-2 text-green-700'>Optimized Prompt</h3><div class='prose max-w-none text-sm'>${formatMarkdown(data.optimized_prompt)}</div>`;
     container.appendChild(optDiv);
   }
 
@@ -148,7 +158,7 @@ function renderChatOutput(data) {
   if (data.tweaked_match) {
     const tweakDiv = document.createElement("div");
     tweakDiv.className = "p-4 bg-white rounded-md shadow";
-    tweakDiv.innerHTML = `<h3 class='font-semibold mb-2 text-indigo-700'>Tweaked Top Match</h3><pre class='whitespace-pre-wrap text-sm'>${data.tweaked_match}</pre>`;
+    tweakDiv.innerHTML = `<h3 class='font-semibold mb-2 text-indigo-700'>Tweaked Top Match</h3><div class='prose max-w-none text-sm'>${formatMarkdown(data.tweaked_match)}</div>`;
     container.appendChild(tweakDiv);
   }
 

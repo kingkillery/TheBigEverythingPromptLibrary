@@ -743,6 +743,27 @@ async def analyze_search_results(
     
     return {"analysis": analysis, "available": True}
 
+# ---------------------- PromptScript Utilities ----------------------------
+
+PROMPTSCRIPT_EXPLANATION = (
+    "Below is a prompt written in PromptScript, a concise prompt-design language that encodes tasks, "
+    "parameters, context, and output formats with compact symbols so agents can parse instructions deterministically. "
+    "In PromptScript, ':' introduces a task, '{}' wraps parameters or inline context, '<>' defines the expected output "
+    "schema, '->' indicates sequential steps, '|' separates alternatives, '@' marks multi-turn conversations, and "
+    "'*n' denotes repetition.\n\n"
+)
+
+
+def generate_promptscript(task_name: str, input_text: str) -> str:
+    """Return a PromptScript-formatted instruction with the standard explanation prefix."""
+    # Escape curly braces within user input to avoid breaking the template
+    safe_input = input_text.replace("{", "{{").replace("}", "}}")
+    script_lines = [
+        f":{task_name} {{input=\"{safe_input}\"}} -> :Validate {{checks=\"clarity,specificity,context\"}} ",
+        "-> :Rewrite {style=\"professional\", domain=\"general\"} <optimized_prompt>",
+    ]
+    return PROMPTSCRIPT_EXPLANATION + "\n".join(script_lines)
+
 @app.post("/api/chat/process", response_model=ChatResponse)
 async def chat_process(request: ChatRequest):
     """Process user prompt: return similar library prompts, optimized prompt, tweaked top match"""
@@ -776,6 +797,17 @@ async def chat_process(request: ChatRequest):
                     tweaked_match = tweak.get("enhanced_content", "")
             except Exception:
                 pass
+
+    # Fallbacks if LLM not available or returns empty
+    if not optimized_prompt:
+        optimized_prompt = user_prompt
+
+    if matches and not tweaked_match:
+        tweaked_match = matches[0].content
+
+    # --- Wrap outputs in PromptScript framework ---
+    optimized_prompt = generate_promptscript("ImprovePrompt", optimized_prompt)
+    tweaked_match = generate_promptscript("ImprovePrompt", tweaked_match) if tweaked_match else ""
 
     return ChatResponse(
         matches=matches,
