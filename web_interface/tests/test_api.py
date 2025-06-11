@@ -1,6 +1,7 @@
 """API endpoint tests for the Prompt Library backend."""
 
 from fastapi.testclient import TestClient
+import pytest
 
 # Import the FastAPI app
 from backend.app import app  # noqa: E402, import after adjusting path
@@ -54,3 +55,13 @@ def test_search_details():
     if data["details"]:
         detail = data["details"][0]
         assert "score" in detail and "breakdown" in detail, "Score breakdown missing"
+
+
+def test_trending_feed():
+    """Trending feed endpoint should return a list of articles."""
+    resp = client.get("/api/trending-feed")
+    if resp.status_code == 503:
+        pytest.skip("Trending feed dependency not installed")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert isinstance(data, list)

@@ -12,6 +12,7 @@ FastAPI-powered backend and lightweight frontend for exploring **The Big Everyth
 | `/api/similar/{id}` | Semantically similar prompts |
 | `/api/collections` | Personal "garden beds" of favourite prompts |
 | `/api/llm/*` | Prompt improvement / summarisation (requires OpenRouter key) |
+| `/api/trending-feed` | Trending articles from popular networks |
 
 ---
 
