@@ -400,3 +400,63 @@ async function ensureDefaultCollection() {
 }
 // Call once on load to ensure user has at least one collection
 ensureDefaultCollection().catch(() => {});
+
+// My Garden modal
+function showBedModal() {
+  const userId = getUserId();
+  // UI boilerplate
+  const overlay = document.createElement("div");
+  overlay.id = "bedModal";
+  overlay.className = "fixed inset-0 bg-black/40 flex items-center justify-center z-50";
+  const box = document.createElement("div");
+  box.className = "bg-white/90 backdrop-blur-md w-11/12 sm:w-3/4 lg:w-1/2 max-h-[80vh] overflow-y-auto p-6 rounded-xl shadow-2xl border border-emerald-200";
+  box.innerHTML = `<h2 class="text-2xl font-bold mb-4 text-emerald-700">🌱 My Garden Bed</h2><div id="bedContent" class="space-y-4"></div>`;
+  const close = document.createElement("button");
+  close.textContent = "Close";
+  close.className = "mt-4 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm";
+  close.onclick = () => overlay.remove();
+  box.appendChild(close);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  // Fetch collection (first)
+  fetch(`/api/collections`, { headers: { "X-User-Id": userId } })
+    .then((r) => r.json())
+    .then((cols) => {
+      if (!cols.length) {
+        document.getElementById("bedContent").innerHTML = "<p class='text-gray-600'>Your bed is empty.</p>";
+        return;
+      }
+      const col = cols[0];
+      return fetch(`/api/collections/${col.id}`, { headers: { "X-User-Id": userId } })
+        .then((r) => r.json())
+        .then((data) => {
+          const content = document.getElementById("bedContent");
+          if (!data.items.length) {
+            content.innerHTML = "<p class='text-gray-600'>No prompts planted yet.</p>";
+            return;
+          }
+          data.items.forEach((it) => {
+            const div = document.createElement("div");
+            div.className = "p-3 bg-white border border-gray-200 rounded-md shadow flex justify-between items-center";
+            div.innerHTML = `<div><h3 class='font-semibold'>${it.title}</h3><p class='text-xs text-gray-500'>${it.category}</p></div>`;
+            const del = document.createElement("button");
+            del.textContent = "🗑️";
+            del.className = "text-red-600 hover:text-red-800";
+            del.onclick = () => {
+              fetch(`/api/collections/${col.id}/items/${encodeURIComponent(it.id)}`, {
+                method: "DELETE",
+                headers: { "X-User-Id": userId },
+              }).then(() => {
+                div.remove();
+              });
+            };
+            div.appendChild(del);
+            div.addEventListener("click", () => showPrompt(it.id));
+            content.appendChild(div);
+          });
+        });
+    });
+}
+
+document.getElementById("myBedBtn")?.addEventListener("click", showBedModal);
