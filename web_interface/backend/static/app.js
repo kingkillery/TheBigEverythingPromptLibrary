@@ -372,7 +372,13 @@ function toast(msg) {
 window.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("chatProcessBtn");
   if (btn) btn.addEventListener("click", processPrompt);
-  document.getElementById("myBedBtn")?.addEventListener("click", showBedModal);
+  
+  const bedBtn = document.getElementById("myBedBtn");
+  if (bedBtn) {
+    bedBtn.addEventListener("click", showBedModal);
+  } else {
+    console.error("My Garden button not found!");
+  }
 });
 
 // Utility: get or generate userId stored locally
