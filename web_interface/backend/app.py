@@ -24,7 +24,7 @@ sys.path.append(str(REPO_ROOT / ".scripts"))
 # Ensure backend directory is on import path for sibling modules like collections_db
 sys.path.append(str(Path(__file__).parent))
 
-import gptparser
+import gptparser  # type: ignore
 
 # Enhanced search capabilities
 try:

@@ -26,20 +26,69 @@ FREE_MODELS = {
         "context_length": 131072,
         "good_for": ["creative", "analysis", "coding"]
     },
-    "qwen-72b": {
-        "id": "qwen/qwen-2-72b-instruct:free",
-        "name": "Qwen2 72B Instruct", 
-        "description": "Large multilingual model",
-        "context_length": 32768,
-        "good_for": ["complex_analysis", "enhancement", "creative"]
-    },
     "gemma-7b": {
         "id": "google/gemma-7b-it:free",
         "name": "Gemma 7B IT",
         "description": "Google's instruction-tuned model",
         "context_length": 8192,
         "good_for": ["analysis", "summarization"]
-    }
+    },
+    "deepseek-qwen3-8b": {
+        "id": "deepseek/deepseek-r1-0528-qwen3-8b:free",
+        "name": "DeepSeek Qwen3 8B (R1)",
+        "description": "Fast 8B model tuned by DeepSeek and Qwen3",
+        "context_length": 32768,
+        "good_for": ["analysis", "creative", "coding"]
+    },
+    "deepseek-base": {
+        "id": "deepseek/deepseek-r1-0528:free",
+        "name": "DeepSeek Base (R1)",
+        "description": "General-purpose DeepSeek R1 model",
+        "context_length": 32768,
+        "good_for": ["general", "summarization", "chat"]
+    },
+    "phi-4-reasoning": {
+        "id": "microsoft/phi-4-reasoning-plus:free",
+        "name": "Phi-4 Reasoning Plus",
+        "description": "Microsoft Phi-4 specialised for reasoning",
+        "context_length": 131072,
+        "good_for": ["reasoning", "analysis", "coding"]
+    },
+    "qwen3-235b": {
+        "id": "qwen/qwen3-235b-a22b:free",
+        "name": "Qwen3 235B",
+        "description": "Large-scale Qwen3 235B parameter model",
+        "context_length": 32768,
+        "good_for": ["creative", "analysis", "multilingual"]
+    },
+    "llama-4-scout": {
+        "id": "meta-llama/llama-4-scout:free",
+        "name": "Llama-4 Scout",
+        "description": "Meta Llama-4 lightweight scout model",
+        "context_length": 131072,
+        "good_for": ["analysis", "summarization", "creative"]
+    },
+    "qwen3-30b": {
+        "id": "qwen/qwen3-30b-a3b:free",
+        "name": "Qwen3 30B",
+        "description": "Qwen3 30B parameter variant",
+        "context_length": 32768,
+        "good_for": ["analysis", "creative", "coding"]
+    },
+    "mai-ds-r1": {
+        "id": "microsoft/mai-ds-r1:free",
+        "name": "Microsoft MAI DS R1",
+        "description": "Microsoft AI model R1",
+        "context_length": 32768,
+        "good_for": ["analysis", "chat"]
+    },
+    "kimi-vl": {
+        "id": "moonshotai/kimi-vl-a3b-thinking:free",
+        "name": "Kimi-VL A3B Thinking",
+        "description": "MoonshotAI multimodal reasoning model",
+        "context_length": 32768,
+        "good_for": ["vision", "reasoning", "creative"]
+    },
 }
 
 class OpenRouterLLM:
