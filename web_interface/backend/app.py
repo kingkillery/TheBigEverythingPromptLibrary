@@ -78,6 +78,8 @@ from collections_db import (
     get_chain,
     update_chain,
     delete_chain,
+    create_prompt_version,
+    list_prompt_versions,
 )
 
 from rss_news import rss_fetcher
@@ -1367,6 +1369,83 @@ async def get_ai_news(limit: int = Query(20, description="Max news items")):
     """Return latest AI-related headlines aggregated from RSS feeds."""
     items = rss_fetcher.get_ai_news()[:limit]
     return {"items": items}
+
+# -------------------- Prompt Feedback & Iteration --------------------
+
+class PromptFeedbackRequest(BaseModel):
+    feedback: str
+    enhancement_type: Optional[str] = "improve"
+
+class PromptVersionResponse(BaseModel):
+    version_id: int
+    version_number: int
+    improved_content: str
+    created_at: str
+
+
+@app.post("/api/prompts/{prompt_id}/feedback", response_model=PromptVersionResponse)
+async def iterate_prompt(
+    prompt_id: str,
+    payload: PromptFeedbackRequest,
+    user_id: str = Header(..., alias="X-User-Id"),
+):
+    """Generate an improved version of a prompt based on user feedback and store it."""
+    # Locate the original prompt in the current index
+    original_items = [item for item in index_manager.index if item.id == prompt_id]
+    if not original_items:
+        raise HTTPException(status_code=404, detail="Prompt not found")
+    original_item = original_items[0]
+
+    # Ensure LLM connector is available
+    if not index_manager.llm_connector:
+        raise HTTPException(status_code=503, detail="LLM connector not available")
+
+    # Combine original prompt with explicit feedback for the model
+    combined_prompt = original_item.content
+    if payload.feedback:
+        combined_prompt = f"{combined_prompt}\n\nUser feedback to address:\n{payload.feedback.strip()}"
+
+    try:
+        enhanced = await index_manager.llm_connector.enhance_prompt(
+            combined_prompt, enhancement_type=payload.enhancement_type or "improve"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"LLM processing failed: {e}")
+
+    if not enhanced or not enhanced.get("enhanced_content"):
+        raise HTTPException(status_code=500, detail="Failed to generate improved prompt")
+
+    # Persist the new version in the DB
+    version_row_id = create_prompt_version(
+        original_prompt_id=prompt_id,
+        user_id=user_id,
+        feedback=payload.feedback,
+        enhancement_type=payload.enhancement_type or "improve",
+        improved_content=enhanced["enhanced_content"],
+    )
+
+    # Retrieve version_number for response
+    versions = list_prompt_versions(prompt_id)
+    created_version = next((v for v in versions if v["id"] == version_row_id), None)
+    if not created_version:
+        created_version = {
+            "id": version_row_id,
+            "version_number": len(versions),
+            "improved_content": enhanced["enhanced_content"],
+            "created_at": None,
+        }
+
+    return PromptVersionResponse(
+        version_id=created_version["id"],
+        version_number=created_version["version_number"],
+        improved_content=created_version["improved_content"],
+        created_at=created_version.get("created_at", ""),
+    )
+
+@app.get("/api/prompts/{prompt_id}/versions")
+async def get_prompt_versions(prompt_id: str):
+    """Return all stored versions of a prompt"""
+    return list_prompt_versions(prompt_id)
 
 if __name__ == "__main__":
     import uvicorn

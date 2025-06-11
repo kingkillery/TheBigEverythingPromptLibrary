@@ -76,6 +76,23 @@ def init_db() -> None:
         )
         conn.commit()
 
+        # Prompt versions (grafts) table
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS prompt_versions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                original_prompt_id TEXT NOT NULL,
+                version_number INTEGER NOT NULL,
+                user_id TEXT NOT NULL,
+                feedback TEXT,
+                enhancement_type TEXT,
+                improved_content TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        conn.commit()
+
 
 # --- CRUD helpers ---------------------------------------------------------
 
@@ -329,6 +346,92 @@ def delete_chain(chain_id: int, user_id: str) -> None:
             (chain_id, user_id),
         )
         conn.commit()
+
+
+# -------------------- Prompt Versions (Grafts) Management -------------------
+
+# The prompt_versions table allows storing improved versions ("grafts") of an existing
+# prompt together with the feedback that produced the graft. A monotonic
+# version_number is maintained per original_prompt_id so that clients can easily
+# reference e.g. v1, v2, v3, ...
+
+def _get_next_version_number(original_prompt_id: str) -> int:
+    """Return the next version number for a prompt (starting from 1)."""
+    with _get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT COALESCE(MAX(version_number), 0) + 1 FROM prompt_versions WHERE original_prompt_id = ?",
+            (original_prompt_id,),
+        )
+        return cur.fetchone()[0]
+
+
+def create_prompt_version(
+    original_prompt_id: str,
+    user_id: str,
+    feedback: str,
+    enhancement_type: str,
+    improved_content: str,
+) -> int:
+    """Insert a new improved version of a prompt and return the new row id."""
+    version_number = _get_next_version_number(original_prompt_id)
+    with _get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO prompt_versions (
+                original_prompt_id,
+                version_number,
+                user_id,
+                feedback,
+                enhancement_type,
+                improved_content
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                original_prompt_id,
+                version_number,
+                user_id,
+                feedback,
+                enhancement_type,
+                improved_content,
+            ),
+        )
+        conn.commit()
+        # Record graft usage stat for original prompt
+        try:
+            record_graft(original_prompt_id)
+        except Exception:
+            pass
+        return cur.lastrowid
+
+
+def list_prompt_versions(original_prompt_id: str):
+    """Return all versions of a prompt ordered by version_number asc."""
+    with _get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT id, version_number, user_id, feedback, enhancement_type, improved_content, created_at
+            FROM prompt_versions
+            WHERE original_prompt_id = ?
+            ORDER BY version_number ASC
+            """,
+            (original_prompt_id,),
+        )
+        rows = cur.fetchall()
+        return [
+            {
+                "id": r[0],
+                "version_number": r[1],
+                "user_id": r[2],
+                "feedback": r[3],
+                "enhancement_type": r[4],
+                "improved_content": r[5],
+                "created_at": r[6],
+            }
+            for r in rows
+        ]
 
 
 # Initialize DB when module imported
