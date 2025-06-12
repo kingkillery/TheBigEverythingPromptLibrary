@@ -8,9 +8,9 @@ httpx==0.25.0
 # Enhanced search capabilities
 sentence-transformers==2.2.2
 numpy
-torch
-torchvision
-torchaudio
+torch==2.2.2
+torchvision==0.17.2
+torchaudio==2.2.2
 scikit-learn
 fuzzywuzzy==0.18.0
 python-Levenshtein==0.23.0
