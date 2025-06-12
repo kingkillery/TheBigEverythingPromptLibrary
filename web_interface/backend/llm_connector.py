@@ -342,6 +342,159 @@ Provide detailed analysis and recommendations."""
         """Get list of available free models"""
         return FREE_MODELS
     
+    async def promptsmith_9000_generate(
+        self, 
+        user_prompt: str, 
+        prompt_library: List[Dict[str, Any]] = None,
+        context: str = "",
+        preferences: str = ""
+    ) -> Optional[Dict[str, Any]]:
+        """
+        PromptSmith 9000 - Battle-tested prompt generation workflow
+        Implements the six-step enhancement process with library integration
+        """
+        
+        # Load PromptSmith 9000 system prompt
+        promptsmith_system = """You are **PromptSmith 9000**, an expert prompt engineer that transforms raw user inputs into production-ready, high-performance prompts using battle-tested techniques from Anthropic's prompt engineering playbook.
+
+**Objective**: Transform a raw USER_PROMPT plus access to a PROMPT_LIBRARY into a production-ready, best-practice prompt template (the "GREAT_PROMPT"). Return both the GREAT_PROMPT and a comprehensive "meta" report.
+
+**Six-Step Enhancement Workflow:**
+
+1. **Dissect the USER_PROMPT**
+   - Summarize user intent in ≤ 2 sentences
+   - Identify missing information that would block high-quality output
+   - If critical gaps exist, output CLARIFYING_QUESTIONS and STOP
+
+2. **Mine the PROMPT_LIBRARY**
+   - Retrieve 3-5 snippets with highest semantic overlap
+   - Extract successful patterns, formatting tricks, structural elements
+   - Identify reusable components
+
+3. **Plan the New Prompt Architecture**
+   Break into canonical sections: <role>, <context>, <instructions>, <examples>, <thinking>, <answer_format>, <constraints>, <params>
+
+4. **Draft the GREAT_PROMPT**
+   - Populate every section from Step 3
+   - Apply "Golden Rule of Clear Prompting"
+   - Incorporate preferences and context
+
+5. **Self-Critique & Refine**
+   - Test for clarity, completeness, confusion prevention
+   - Iterate until meeting professional standards
+
+6. **Generate Final Output**
+   Provide JSON with GREAT_PROMPT and META_REPORT
+
+**Battle-Tested Techniques:**
+- XML structure mastery for unambiguous parsing
+- 3-5 well-chosen multishot examples
+- Chain-of-thought activation for complex reasoning
+- Role-based behavior anchoring
+- Prefilling strategies for format control
+
+**Output exactly in this JSON format:**
+```json
+{
+  "GREAT_PROMPT": "complete enhanced prompt with XML tags",
+  "META_REPORT": {
+      "library_snippets_used": ["title1", "title2"],
+      "design_choices": "explanation of techniques chosen",
+      "optimization_techniques": "list of applied methods",
+      "suggested_next_steps": "testing and evaluation advice",
+      "performance_predictions": "expected strengths and weaknesses"
+  }
+}
+```"""
+
+        # Prepare prompt library context
+        library_context = ""
+        if prompt_library:
+            library_items = []
+            for item in prompt_library[:10]:  # Limit to top 10 for context length
+                title = item.get('title', 'Untitled')
+                content = item.get('content', '')[:500]  # Truncate long content
+                tags = ', '.join(item.get('tags', []))
+                library_items.append(f"**{title}**\nTags: {tags}\nContent: {content}\n---")
+            library_context = f"PROMPT_LIBRARY:\n" + "\n".join(library_items)
+
+        # Construct user message
+        user_message_parts = [
+            f"USER_PROMPT: {user_prompt}",
+            f"CONTEXT: {context}" if context else "",
+            f"PREFERENCES: {preferences}" if preferences else "",
+            library_context if library_context else "PROMPT_LIBRARY: (empty)"
+        ]
+        
+        user_message = "\n\n".join([part for part in user_message_parts if part])
+
+        messages = [
+            {"role": "system", "content": promptsmith_system},
+            {"role": "user", "content": user_message}
+        ]
+
+        try:
+            result = await self._make_request(
+                messages, 
+                model="llama-3.1-8b",  # Best reasoning model for complex tasks
+                max_tokens=4000,
+                temperature=0.3  # Lower temperature for more consistent output
+            )
+
+            if result:
+                # Try to parse JSON response
+                try:
+                    import json
+                    # Extract JSON from response if wrapped in markdown
+                    if "```json" in result:
+                        json_start = result.find("```json") + 7
+                        json_end = result.find("```", json_start)
+                        json_content = result[json_start:json_end].strip()
+                    else:
+                        json_content = result.strip()
+                    
+                    parsed_result = json.loads(json_content)
+                    
+                    # Add metadata
+                    parsed_result["metadata"] = {
+                        "model_used": FREE_MODELS["llama-3.1-8b"]["name"],
+                        "timestamp": datetime.now().isoformat(),
+                        "workflow": "PromptSmith 9000",
+                        "library_items_processed": len(prompt_library) if prompt_library else 0
+                    }
+                    
+                    return parsed_result
+                    
+                except json.JSONDecodeError:
+                    # Fallback: return raw result with basic structure
+                    return {
+                        "GREAT_PROMPT": result,
+                        "META_REPORT": {
+                            "library_snippets_used": [],
+                            "design_choices": "JSON parsing failed, returning raw output",
+                            "optimization_techniques": ["PromptSmith 9000 workflow applied"],
+                            "suggested_next_steps": "Review and refine manually",
+                            "performance_predictions": "Manual review recommended"
+                        },
+                        "metadata": {
+                            "model_used": FREE_MODELS["llama-3.1-8b"]["name"],
+                            "timestamp": datetime.now().isoformat(),
+                            "workflow": "PromptSmith 9000",
+                            "parse_error": True
+                        }
+                    }
+
+        except Exception as e:
+            return {
+                "error": f"PromptSmith 9000 generation failed: {str(e)}",
+                "metadata": {
+                    "timestamp": datetime.now().isoformat(),
+                    "workflow": "PromptSmith 9000"
+                }
+            }
+
+        return None
+
     async def close(self):
         """Close the HTTP client"""
         await self.client.aclose()

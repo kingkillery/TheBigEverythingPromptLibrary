@@ -849,6 +849,71 @@ async def suggest_use_cases_endpoint(
     use_cases = await index_manager.llm_connector.suggest_use_cases(prompt_content)
     return {"use_cases": use_cases or []}
 
+@app.post("/api/llm/promptsmith-9000")
+async def promptsmith_9000_generate_endpoint(
+    request: dict
+):
+    """
+    PromptSmith 9000 - Battle-tested prompt generation using Anthropic's best practices
+    Transforms raw user input into production-ready prompts with library integration
+    """
+    if not index_manager.llm_connector:
+        raise HTTPException(status_code=501, detail="LLM connector not available")
+    
+    user_prompt = request.get("user_prompt", "")
+    context = request.get("context", "")
+    preferences = request.get("preferences", "")
+    max_library_items = request.get("max_library_items", 10)
+    
+    if not user_prompt:
+        raise HTTPException(status_code=400, detail="user_prompt is required")
+    
+    # Get relevant prompts from library for context
+    prompt_library = []
+    if user_prompt.strip():
+        # Use existing search to find relevant prompts
+        search_results = index_manager.search(
+            query=user_prompt,
+            category="",
+            tags=[],
+            limit=max_library_items,
+            offset=0,
+            min_quality=0.5,  # Only include decent quality prompts
+            sort_by="relevance"
+        )
+        
+        # Convert search results to library format
+        for item in search_results.results:
+            prompt_library.append({
+                "title": item.title,
+                "content": item.content[:1000],  # Truncate for context length
+                "tags": item.tags,
+                "quality_score": getattr(item, 'quality_score', 0.0),
+                "category": item.category
+            })
+    
+    try:
+        result = await index_manager.llm_connector.promptsmith_9000_generate(
+            user_prompt=user_prompt,
+            prompt_library=prompt_library,
+            context=context,
+            preferences=preferences
+        )
+        
+        if result and "error" not in result:
+            return {
+                "success": True,
+                "result": result,
+                "library_items_used": len(prompt_library),
+                "workflow": "PromptSmith 9000"
+            }
+        else:
+            error_message = result.get("error", "Unknown error") if result else "No result returned"
+            raise HTTPException(status_code=500, detail=f"PromptSmith 9000 generation failed: {error_message}")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PromptSmith 9000 error: {str(e)}")
+
 @app.get("/api/search/suggestions")
 async def get_search_suggestions(
     query: str = Query(..., description="Partial search query")
