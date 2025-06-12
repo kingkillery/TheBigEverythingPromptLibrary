@@ -9,8 +9,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      # Mount the repository as read-only to access all prompts
-      - .:/app:ro
+      # Mount the repository as read-write to allow subpath volumes
+      - .:/app
       # Separate writable volume for cache and embeddings
       - prompt-cache:/app/web_interface/backend/embeddings_cache
       - model-cache:/app/.cache
