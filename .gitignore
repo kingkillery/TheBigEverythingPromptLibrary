@@ -23,6 +23,7 @@ CLAUDE.md
 .idea/**/dynamic.xml
 .idea/**/uiDesigner.xml
 .idea/**/dbnavigator.xml
+OpenJDK-24
 
 # Gradle
 .idea/**/gradle.xml
