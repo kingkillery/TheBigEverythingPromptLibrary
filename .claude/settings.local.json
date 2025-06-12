@@ -15,7 +15,9 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:huggingface.co)",
       "WebFetch(domain:docs.anthropic.com)",
-      "WebFetch(domain:platform.openai.com)"
+      "WebFetch(domain:platform.openai.com)",
+      "Bash(curl:*)",
+      "Bash(pip3 install:*)"
     ],
     "deny": []
   }

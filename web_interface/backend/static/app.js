@@ -700,6 +700,11 @@ function renderPromptModal(item) {
   });
   actions.appendChild(remixBtn);
 
+  modal.appendChild(actions);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+}
+
 // Create ripple effect for buttons
 function createRippleEffect(button) {
   const ripple = document.createElement('div');
@@ -869,11 +874,6 @@ function showGraftResult(result, option) {
   document.body.appendChild(modal);
 }
 
-  modal.appendChild(actions);
-  overlay.appendChild(modal);
-  document.body.appendChild(overlay);
-}
-
 // Helper for POST requests returning JSON
 async function postJSON(url, body) {
   const res = await fetch(url, {
@@ -897,17 +897,30 @@ function formatMarkdown(md) {
 
 // Process prompt via /api/chat/process and render output
 async function processPrompt() {
-  const prompt = document.getElementById("chatPrompt").value.trim();
+  const promptElement = document.getElementById("chatPrompt");
+  const prompt = promptElement.value.trim();
   if (!prompt) {
     alert("Please enter a prompt first.");
     return;
   }
+
+  const vineContainer = promptElement.closest(".vine-container");
+  const btn = document.getElementById("chatProcessBtn");
+
+  // Activate loading state
+  vineContainer?.classList.add("loading");
+  if (btn) btn.disabled = true;
+
   try {
     const data = await postJSON("/api/chat/process", { prompt, max_results: 5 });
     renderChatOutput(data);
   } catch (err) {
     console.error(err);
     alert("Failed to process prompt. See console for details.");
+  } finally {
+    // Deactivate loading state
+    vineContainer?.classList.remove("loading");
+    if (btn) btn.disabled = false;
   }
 }
 

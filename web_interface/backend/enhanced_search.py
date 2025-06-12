@@ -210,7 +210,8 @@ class EnhancedSearchEngine:
     def advanced_search(self, items: List, query: str = "", 
                        min_quality: float = 0.0, max_results: int = 50,
                        category_filter: str = "", tag_filter: List[str] = None,
-                       sort_by: str = "relevance") -> Tuple[List, Dict]:
+                       sort_by: str = "relevance", meta_category_filter: str = "",
+                       meta_subcategory_filter: str = "") -> Tuple[List, Dict]:
         """
         Advanced search with quality filtering and detailed scoring
         
@@ -234,6 +235,16 @@ class EnhancedSearchEngine:
         if category_filter:
             filtered_items = [item for item in filtered_items 
                             if item.category.lower() == category_filter.lower()]
+        
+        # Filter by meta-category
+        if meta_category_filter:
+            filtered_items = [item for item in filtered_items 
+                            if hasattr(item, 'meta_category') and item.meta_category == meta_category_filter]
+        
+        # Filter by meta-subcategory
+        if meta_subcategory_filter:
+            filtered_items = [item for item in filtered_items 
+                            if hasattr(item, 'meta_subcategory') and item.meta_subcategory == meta_subcategory_filter]
         
         # Filter by tags
         if tag_filter:
@@ -374,7 +385,8 @@ class EnhancedSearchEngine:
     def advanced_search_details(self, items: List, query: str = "",
                                 min_quality: float = 0.0, max_results: int = 50,
                                 category_filter: str = "", tag_filter: List[str] = None,
-                                sort_by: str = "relevance") -> Tuple[List[Dict], Dict]:
+                                sort_by: str = "relevance", meta_category_filter: str = "",
+                                meta_subcategory_filter: str = "") -> Tuple[List[Dict], Dict]:
         """
         Same as advanced_search but returns per-item score breakdown.
         """
@@ -388,7 +400,9 @@ class EnhancedSearchEngine:
             max_results=max_results,
             category_filter=category_filter,
             tag_filter=tag_filter,
-            sort_by=sort_by
+            sort_by=sort_by,
+            meta_category_filter=meta_category_filter,
+            meta_subcategory_filter=meta_subcategory_filter
         )
 
         query_keywords = self.extract_keywords(query) if query else []

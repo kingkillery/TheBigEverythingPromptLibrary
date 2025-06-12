@@ -82,6 +82,16 @@ from collections_db import (
     list_prompt_versions,
 )
 
+# Import category configuration
+from category_config import (
+    CATEGORIES,
+    get_category_by_id,
+    get_subcategory_by_id,
+    suggest_category,
+    get_all_categories,
+    get_category_hierarchy
+)
+
 from rss_news import rss_fetcher
 
 app = FastAPI(title="Prompt Library API", version="1.0.0")
@@ -105,6 +115,8 @@ class PromptItem(BaseModel):
     description: str
     category: str
     subcategory: Optional[str] = None
+    meta_category: Optional[str] = None  # New hierarchical category
+    meta_subcategory: Optional[str] = None  # New hierarchical subcategory
     url: Optional[str] = None
     file_path: str
     content: str
@@ -187,15 +199,44 @@ class IndexManager:
             tags = []
             description = gpt.get('description', '') or ''
             title = gpt.get('title', '') or ''
+            instructions = gpt.get('instructions', '') or ''
+            
+            # Combined text for analysis
+            content_text = f"{title} {description} {instructions}"
+            
+            # Auto-categorize using our category configuration
+            suggested_cat = suggest_category(content_text)
+            meta_category = None
+            meta_subcategory = None
+            
+            if suggested_cat:
+                meta_category = suggested_cat[0]
+                meta_subcategory = suggested_cat[1]
+            
+            # Enhanced tag extraction using category keywords
+            all_keywords = set()
+            
+            # Add keywords from matched category
+            if meta_category:
+                cat = get_category_by_id(meta_category)
+                if cat:
+                    all_keywords.update(cat.keywords)
+                    if meta_subcategory:
+                        subcat = get_subcategory_by_id(meta_category, meta_subcategory)
+                        if subcat:
+                            all_keywords.update(subcat.keywords)
             
             # Simple tag extraction from common keywords
-            content_text = f"{title} {description} {gpt.get('instructions', '') or ''}"
             tag_keywords = ['coding', 'writing', 'analysis', 'creative', 'business', 'education', 
                           'productivity', 'gaming', 'art', 'security', 'jailbreak', 'assistant']
+            all_keywords.update(tag_keywords)
             
-            for keyword in tag_keywords:
+            for keyword in all_keywords:
                 if keyword.lower() in content_text.lower():
                     tags.append(keyword)
+            
+            # Deduplicate tags
+            tags = list(set(tags))[:10]  # Limit to 10 tags
             
             item = PromptItem(
                 id=gpt_id.id,
@@ -203,9 +244,11 @@ class IndexManager:
                 description=description,
                 category="CustomInstructions",
                 subcategory="ChatGPT",
+                meta_category=meta_category,
+                meta_subcategory=meta_subcategory,
                 url=gpt.get('url', ''),
                 file_path=gpt.filename,
-                content=gpt.get('instructions', '') or '',
+                content=instructions,
                 tags=tags,
                 version=gpt.get('version', '')
             )
@@ -346,7 +389,8 @@ class IndexManager:
     
     def search(self, query: str = "", category: str = "", tags: List[str] = None, 
                limit: int = 50, offset: int = 0, min_quality: float = 0.0,
-               sort_by: str = "relevance") -> SearchResponse:
+               sort_by: str = "relevance", meta_category: str = "", 
+               meta_subcategory: str = "") -> SearchResponse:
         """Enhanced search with quality filtering and advanced scoring"""
         if tags is None:
             tags = []
@@ -360,7 +404,9 @@ class IndexManager:
                 max_results=limit + offset,  # Get more for pagination
                 category_filter=category,
                 tag_filter=tags,
-                sort_by=sort_by
+                sort_by=sort_by,
+                meta_category_filter=meta_category,
+                meta_subcategory_filter=meta_subcategory
             )
             
             # Apply pagination
@@ -372,7 +418,8 @@ class IndexManager:
                 total=total,
                 query=query,
                 filters={"category": category, "tags": tags, "min_quality": min_quality, 
-                        "sort_by": sort_by, "search_stats": stats}
+                        "sort_by": sort_by, "meta_category": meta_category, 
+                        "meta_subcategory": meta_subcategory, "search_stats": stats}
             )
         
         # Fallback to original search logic
@@ -381,6 +428,14 @@ class IndexManager:
         # Filter by category
         if category:
             results = [item for item in results if item.category.lower() == category.lower()]
+        
+        # Filter by meta-category
+        if meta_category:
+            results = [item for item in results if item.meta_category == meta_category]
+            
+        # Filter by meta-subcategory
+        if meta_subcategory:
+            results = [item for item in results if item.meta_subcategory == meta_subcategory]
         
         # Filter by tags
         if tags:
@@ -405,7 +460,8 @@ class IndexManager:
             items=results,
             total=total,
             query=query,
-            filters={"category": category, "tags": tags}
+            filters={"category": category, "tags": tags, "meta_category": meta_category, 
+                    "meta_subcategory": meta_subcategory}
         )
     
     def _keyword_search(self, items: List[PromptItem], query: str) -> List[PromptItem]:
@@ -447,6 +503,40 @@ class IndexManager:
             counts[item.category] = counts.get(item.category, 0) + 1
         # Sort alphabetically for stable dropdown order
         return dict(sorted(counts.items()))
+    
+    def get_meta_categories(self) -> Dict[str, Dict[str, Any]]:
+        """Get all meta-categories with counts and metadata"""
+        meta_counts = {}
+        
+        # Initialize with all categories from config
+        for cat_id, category in CATEGORIES.items():
+            meta_counts[cat_id] = {
+                "name": category.name,
+                "description": category.description,
+                "count": 0,
+                "icon": category.icon,
+                "color": category.color,
+                "subcategories": {}
+            }
+            
+            # Initialize subcategory counts
+            for subcat in category.subcategories:
+                meta_counts[cat_id]["subcategories"][subcat.id] = {
+                    "name": subcat.name,
+                    "description": subcat.description,
+                    "count": 0,
+                    "icon": subcat.icon
+                }
+        
+        # Count items in each category
+        for item in self.index:
+            if item.meta_category and item.meta_category in meta_counts:
+                meta_counts[item.meta_category]["count"] += 1
+                
+                if item.meta_subcategory and item.meta_subcategory in meta_counts[item.meta_category]["subcategories"]:
+                    meta_counts[item.meta_category]["subcategories"][item.meta_subcategory]["count"] += 1
+        
+        return meta_counts
     
     def get_tags(self) -> Dict[str, int]:
         """Get all tags with counts"""
@@ -507,7 +597,9 @@ async def search_prompts_details(
     limit: int = Query(50, description="Number of results per page"),
     offset: int = Query(0, description="Offset for pagination"),
     min_quality: float = Query(0.0, description="Minimum quality score (0.0-1.0)"),
-    sort_by: str = Query("relevance", description="Sort by: relevance, quality, title, newest")
+    sort_by: str = Query("relevance", description="Sort by: relevance, quality, title, newest"),
+    meta_category: str = Query("", description="Filter by meta-category"),
+    meta_subcategory: str = Query("", description="Filter by meta-subcategory")
 ):
     """Search that returns per-item score breakdown for transparency"""
     tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()] if tags else []
@@ -523,7 +615,9 @@ async def search_prompts_details(
         max_results=limit + offset,
         category_filter=category,
         tag_filter=tag_list,
-        sort_by=sort_by
+        sort_by=sort_by,
+        meta_category_filter=meta_category,
+        meta_subcategory_filter=meta_subcategory
     )
     total = stats.get('total_found', len(details))
     paginated_details = details[offset:offset + limit]
@@ -555,16 +649,33 @@ async def search_prompts(
     limit: int = Query(50, description="Number of results per page"),
     offset: int = Query(0, description="Offset for pagination"),
     min_quality: float = Query(0.0, description="Minimum quality score (0.0-1.0)"),
-    sort_by: str = Query("relevance", description="Sort by: relevance, quality, title, newest")
+    sort_by: str = Query("relevance", description="Sort by: relevance, quality, title, newest"),
+    meta_category: str = Query("", description="Filter by meta-category"),
+    meta_subcategory: str = Query("", description="Filter by meta-subcategory")
 ):
     """Enhanced search with quality filtering and advanced scoring"""
     tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()] if tags else []
-    return index_manager.search(query, category, tag_list, limit, offset, min_quality, sort_by)
+    return index_manager.search(query, category, tag_list, limit, offset, min_quality, sort_by, meta_category, meta_subcategory)
 
 @app.get("/api/categories")
 async def get_categories():
     """Get all available categories with counts"""
     return index_manager.get_categories()
+
+@app.get("/api/meta-categories")
+async def get_meta_categories():
+    """Get all meta-categories with counts and metadata"""
+    return index_manager.get_meta_categories()
+
+@app.get("/api/category-config")
+async def get_category_config():
+    """Get the full category configuration"""
+    return get_all_categories()
+
+@app.get("/api/category-hierarchy")
+async def get_category_hierarchy_endpoint():
+    """Get category hierarchy for dropdowns"""
+    return get_category_hierarchy()
 
 @app.get("/api/tags")
 async def get_tags():

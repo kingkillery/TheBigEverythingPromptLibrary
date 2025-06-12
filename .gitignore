@@ -24,7 +24,7 @@ CLAUDE.md
 .idea/**/uiDesigner.xml
 .idea/**/dbnavigator.xml
 OpenJDK-24
-
+.venv/
 # Gradle
 .idea/**/gradle.xml
 .idea/**/libraries

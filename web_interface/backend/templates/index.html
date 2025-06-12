@@ -211,6 +211,219 @@
       .animate-pulse-gentle {
         animation: pulse-gentle 2s infinite;
       }
+
+      /* Enhanced Vine loading animation with leaves and glow */
+      @keyframes vineGrow {
+        0% {
+          clip-path: polygon(0 100%, 100% 100%, 100% 100%, 0% 100%);
+          filter: drop-shadow(0 0 0px rgba(34, 197, 94, 0));
+        }
+        50% {
+          filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.6));
+        }
+        100% {
+          clip-path: polygon(0 0%, 100% 0%, 100% 100%, 0% 100%);
+          filter: drop-shadow(0 0 12px rgba(34, 197, 94, 0.8));
+        }
+      }
+
+      @keyframes leafSway {
+        0%, 100% { transform: rotate(-2deg) scale(1); }
+        50% { transform: rotate(2deg) scale(1.05); }
+      }
+
+      @keyframes sparkle {
+        0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+        50% { opacity: 1; transform: scale(1) rotate(180deg); }
+      }
+
+      .vine-container {
+        position: relative;
+        overflow: visible;
+      }
+
+      .vine-container .vine {
+        position: absolute;
+        pointer-events: none;
+        z-index: 10;
+        opacity: 0;
+        transition: opacity 0.3s ease-out;
+      }
+
+      /* Vertical vines (left and right sides) */
+      .vine-container .vine-vertical {
+        top: -15px;
+        bottom: -15px;
+        width: 32px;
+        clip-path: polygon(0 100%, 100% 100%, 100% 100%, 0% 100%);
+        background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http://www.w3.org/2000/svg%27%20width%3D%2732%27%20height%3D%27300%27%20viewBox%3D%270%200%2032%20300%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27vineGrad%27%20x1%3D%270%25%27%20y1%3D%270%25%27%20x2%3D%27100%25%27%20y2%3D%27100%25%27%3E%3Cstop%20offset%3D%270%25%27%20style%3D%27stop-color%3A%2334d399%3Bstop-opacity%3A1%27%20/%3E%3Cstop%20offset%3D%2750%25%27%20style%3D%27stop-color%3A%2316a34a%3Bstop-opacity%3A1%27%20/%3E%3Cstop%20offset%3D%27100%25%27%20style%3D%27stop-color%3A%23166534%3Bstop-opacity%3A1%27%20/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath%20d%3D%27M16%200%20Q8%2015%2024%2030%20Q8%2045%2024%2060%20Q8%2075%2024%2090%20Q8%20105%2024%20120%20Q8%20135%2024%20150%20Q8%20165%2024%20180%20Q8%20195%2024%20210%20Q8%20225%2024%20240%20Q8%20255%2024%20270%20Q8%20285%2024%20300%27%20stroke%3D%27url(%23vineGrad)%27%20stroke-width%3D%274%27%20fill%3D%27none%27%20stroke-linecap%3D%27round%27/%3E%3C/svg%3E");
+        background-size: 100% auto;
+        background-position: center top;
+        background-repeat: repeat-y;
+      }
+
+      /* Horizontal vines (top and bottom) */
+      .vine-container .vine-horizontal {
+        left: -15px;
+        right: -15px;
+        height: 32px;
+        clip-path: polygon(0 0, 0 0, 0 100%, 0% 100%);
+        background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http://www.w3.org/2000/svg%27%20width%3D%27300%27%20height%3D%2732%27%20viewBox%3D%270%200%20300%2032%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27vineGradH%27%20x1%3D%270%25%27%20y1%3D%270%25%27%20x2%3D%27100%25%27%20y2%3D%270%25%27%3E%3Cstop%20offset%3D%270%25%27%20style%3D%27stop-color%3A%2334d399%3Bstop-opacity%3A1%27%20/%3E%3Cstop%20offset%3D%2750%25%27%20style%3D%27stop-color%3A%2316a34a%3Bstop-opacity%3A1%27%20/%3E%3Cstop%20offset%3D%27100%25%27%20style%3D%27stop-color%3A%23166534%3Bstop-opacity%3A1%27%20/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath%20d%3D%27M0%2016%20Q15%208%2030%2024%20Q45%208%2060%2024%20Q75%208%2090%2024%20Q105%208%20120%2024%20Q135%208%20150%2024%20Q165%208%20180%2024%20Q195%208%20210%2024%20Q225%208%20240%2024%20Q255%208%20270%2024%20Q285%208%20300%2024%27%20stroke%3D%27url(%23vineGradH)%27%20stroke-width%3D%274%27%20fill%3D%27none%27%20stroke-linecap%3D%27round%27/%3E%3C/svg%3E");
+        background-size: auto 100%;
+        background-position: left center;
+        background-repeat: repeat-x;
+      }
+
+      .vine-container .vine::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http://www.w3.org/2000/svg%27%20width%3D%2732%27%20height%3D%27300%27%20viewBox%3D%270%200%2032%20300%27%3E%3Cg%20fill%3D%27%2322c55e%27%3E%3Cellipse%20cx%3D%2726%27%20cy%3D%2720%27%20rx%3D%274%27%20ry%3D%276%27%20transform%3D%27rotate(25%2026%2020)%27/%3E%3Cellipse%20cx%3D%276%27%20cy%3D%2740%27%20rx%3D%273%27%20ry%3D%275%27%20transform%3D%27rotate(-15%206%2040)%27/%3E%3Cellipse%20cx%3D%2728%27%20cy%3D%2765%27%20rx%3D%273.5%27%20ry%3D%275.5%27%20transform%3D%27rotate(30%2028%2065)%27/%3E%3Cellipse%20cx%3D%274%27%20cy%3D%2785%27%20rx%3D%274%27%20ry%3D%276%27%20transform%3D%27rotate(-20%204%2085)%27/%3E%3Cellipse%20cx%3D%2729%27%20cy%3D%27110%27%20rx%3D%273%27%20ry%3D%275%27%20transform%3D%27rotate(20%2029%20110)%27/%3E%3Cellipse%20cx%3D%275%27%20cy%3D%27130%27%20rx%3D%273.5%27%20ry%3D%275.5%27%20transform%3D%27rotate(-25%205%20130)%27/%3E%3Cellipse%20cx%3D%2727%27%20cy%3D%27155%27%20rx%3D%274%27%20ry%3D%276%27%20transform%3D%27rotate(15%2027%20155)%27/%3E%3Cellipse%20cx%3D%277%27%20cy%3D%27175%27%20rx%3D%273%27%20ry%3D%275%27%20transform%3D%27rotate(-30%207%20175)%27/%3E%3Cellipse%20cx%3D%2726%27%20cy%3D%27200%27%20rx%3D%273.5%27%20ry%3D%275.5%27%20transform%3D%27rotate(25%2026%20200)%27/%3E%3Cellipse%20cx%3D%276%27%20cy%3D%27220%27%20rx%3D%274%27%20ry%3D%276%27%20transform%3D%27rotate(-15%206%20220)%27/%3E%3C/g%3E%3C/svg%3E");
+        background-size: 100% auto;
+        background-position: center top;
+        background-repeat: repeat-y;
+        animation: leafSway 3s ease-in-out infinite;
+      }
+
+      .vine-container .vine::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http://www.w3.org/2000/svg%27%20width%3D%2732%27%20height%3D%27300%27%20viewBox%3D%270%200%2032%20300%27%3E%3Cg%20fill%3D%27%23fbbf24%27%20opacity%3D%270.8%27%3E%3Cpolygon%20points%3D%2720,15%2022,19%2026,19%2023,22%2024,26%2020,24%2016,26%2017,22%2014,19%2018,19%27/%3E%3Cpolygon%20points%3D%278,35%2010,39%2014,39%2011,42%2012,46%208,44%204,46%205,42%202,39%206,39%27/%3E%3Cpolygon%20points%3D%2724,70%2026,74%2030,74%2027,77%2028,81%2024,79%2020,81%2021,77%2018,74%2022,74%27/%3E%3Cpolygon%20points%3D%276,95%208,99%2012,99%209,102%2010,106%206,104%202,106%203,102%200,99%204,99%27/%3E%3Cpolygon%20points%3D%2725,125%2027,129%2031,129%2028,132%2029,136%2025,134%2021,136%2022,132%2019,129%2023,129%27/%3E%3Cpolygon%20points%3D%279,150%2011,154%2015,154%2012,157%2013,161%209,159%205,161%206,157%203,154%207,154%27/%3E%3C/g%3E%3C/svg%3E");
+        background-size: 100% auto;
+        background-position: center top;
+        background-repeat: repeat-y;
+        animation: sparkle 2s ease-in-out infinite;
+      }
+
+      .vine-container.loading .vine {
+        opacity: 1;
+        animation: vineGrow 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+      }
+
+      /* Positioning for different vine types */
+      .vine-left { 
+        left: -36px; 
+        transform-origin: bottom left;
+      }
+      
+      .vine-right { 
+        right: -36px; 
+        transform-origin: bottom right;
+        transform: scaleX(-1);
+      }
+
+      .vine-top {
+        top: -36px;
+        transform-origin: top left;
+      }
+
+      .vine-bottom {
+        bottom: -36px;
+        transform-origin: bottom left;
+      }
+
+      /* Leaves for vertical vines */
+      .vine-container .vine-vertical::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http://www.w3.org/2000/svg%27%20width%3D%2732%27%20height%3D%27300%27%20viewBox%3D%270%200%2032%20300%27%3E%3Cg%20fill%3D%27%2322c55e%27%3E%3Cellipse%20cx%3D%2726%27%20cy%3D%2720%27%20rx%3D%274%27%20ry%3D%276%27%20transform%3D%27rotate(25%2026%2020)%27/%3E%3Cellipse%20cx%3D%276%27%20cy%3D%2740%27%20rx%3D%273%27%20ry%3D%275%27%20transform%3D%27rotate(-15%206%2040)%27/%3E%3Cellipse%20cx%3D%2728%27%20cy%3D%2765%27%20rx%3D%273.5%27%20ry%3D%275.5%27%20transform%3D%27rotate(30%2028%2065)%27/%3E%3Cellipse%20cx%3D%274%27%20cy%3D%2785%27%20rx%3D%274%27%20ry%3D%276%27%20transform%3D%27rotate(-20%204%2085)%27/%3E%3Cellipse%20cx%3D%2729%27%20cy%3D%27110%27%20rx%3D%273%27%20ry%3D%275%27%20transform%3D%27rotate(20%2029%20110)%27/%3E%3Cellipse%20cx%3D%275%27%20cy%3D%27130%27%20rx%3D%273.5%27%20ry%3D%275.5%27%20transform%3D%27rotate(-25%205%20130)%27/%3E%3Cellipse%20cx%3D%2727%27%20cy%3D%27155%27%20rx%3D%274%27%20ry%3D%276%27%20transform%3D%27rotate(15%2027%20155)%27/%3E%3Cellipse%20cx%3D%277%27%20cy%3D%27175%27%20rx%3D%273%27%20ry%3D%275%27%20transform%3D%27rotate(-30%207%20175)%27/%3E%3Cellipse%20cx%3D%2726%27%20cy%3D%27200%27%20rx%3D%273.5%27%20ry%3D%275.5%27%20transform%3D%27rotate(25%2026%20200)%27/%3E%3Cellipse%20cx%3D%276%27%20cy%3D%27220%27%20rx%3D%274%27%20ry%3D%276%27%20transform%3D%27rotate(-15%206%20220)%27/%3E%3C/g%3E%3C/svg%3E");
+        background-size: 100% auto;
+        background-position: center top;
+        background-repeat: repeat-y;
+        animation: leafSway 3s ease-in-out infinite;
+      }
+
+      /* Flowers for vertical vines */
+      .vine-container .vine-vertical::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http://www.w3.org/2000/svg%27%20width%3D%2732%27%20height%3D%27300%27%20viewBox%3D%270%200%2032%20300%27%3E%3Cg%20fill%3D%27%23fbbf24%27%20opacity%3D%270.8%27%3E%3Cpolygon%20points%3D%2720,15%2022,19%2026,19%2023,22%2724,26%2720,24%2716,26%2717,22%2714,19%2718,19%27/%3E%3Cpolygon%20points%3D%278,35%2710,39%2714,39%2711,42%2712,46%278,44%274,46%275,42%272,39%276,39%27/%3E%3Cpolygon%20points%3D%2724,70%2726,74%2730,74%2727,77%2728,81%2724,79%2720,81%2721,77%2718,74%2722,74%27/%3E%3Cpolygon%20points%3D%276,95%278,99%2712,99%279,102%2710,106%276,104%272,106%273,102%270,99%274,99%27/%3E%3Cpolygon%20points%3D%2725,125%2727,129%2731,129%2728,132%2729,136%2725,134%2721,136%2722,132%2719,129%2723,129%27/%3E%3Cpolygon%20points%3D%279,150%2711,154%2715,154%2712,157%2713,161%279,159%275,161%276,157%273,154%277,154%27/%3E%3C/g%3E%3C/svg%3E");
+        background-size: 100% auto;
+        background-position: center top;
+        background-repeat: repeat-y;
+        animation: sparkle 2s ease-in-out infinite;
+      }
+
+      /* Animation delays for wrapping effect */
+      .vine-container.loading .vine-left {
+        animation-delay: 0s;
+      }
+
+      .vine-container.loading .vine-right {
+        animation-delay: 0.3s;
+      }
+
+      .vine-container.loading .vine-top {
+        animation-delay: 0.6s;
+      }
+
+      .vine-container.loading .vine-bottom {
+        animation-delay: 0.9s;
+      }
+
+      /* Leaves for horizontal vines */
+      .vine-container .vine-horizontal::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http://www.w3.org/2000/svg%27%20width%3D%27300%27%20height%3D%2732%27%20viewBox%3D%270%200%20300%2032%27%3E%3Cg%20fill%3D%27%2322c55e%27%3E%3Cellipse%20cx%3D%2720%27%20cy%3D%276%27%20rx%3D%276%27%20ry%3D%274%27%20transform%3D%27rotate(65%2020%206)%27/%3E%3Cellipse%20cx%3D%2740%27%20cy%3D%2726%27%20rx%3D%275%27%20ry%3D%273%27%20transform%3D%27rotate(75%2040%2026)%27/%3E%3Cellipse%20cx%3D%2765%27%20cy%3D%274%27%20rx%3D%275.5%27%20ry%3D%273.5%27%20transform%3D%27rotate(60%2065%204)%27/%3E%3Cellipse%20cx%3D%2785%27%20cy%3D%2728%27%20rx%3D%276%27%20ry%3D%274%27%20transform%3D%27rotate(70%2085%2028)%27/%3E%3Cellipse%20cx%3D%27110%27%20cy%3D%273%27%20rx%3D%275%27%20ry%3D%273%27%20transform%3D%27rotate(70%20110%203)%27/%3E%3Cellipse%20cx%3D%27130%27%20cy%3D%2727%27%20rx%3D%275.5%27%20ry%3D%273.5%27%20transform%3D%27rotate(65%20130%2027)%27/%3E%3Cellipse%20cx%3D%27155%27%20cy%3D%275%27%20rx%3D%276%27%20ry%3D%274%27%20transform%3D%27rotate(75%20155%205)%27/%3E%3Cellipse%20cx%3D%27175%27%20cy%3D%2725%27%20rx%3D%275%27%20ry%3D%273%27%20transform%3D%27rotate(60%20175%2025)%27/%3E%3Cellipse%20cx%3D%27200%27%20cy%3D%276%27%20rx%3D%275.5%27%20ry%3D%273.5%27%20transform%3D%27rotate(65%20200%206)%27/%3E%3Cellipse%20cx%3D%27220%27%20cy%3D%2726%27%20rx%3D%276%27%20ry%3D%274%27%20transform%3D%27rotate(75%20220%2026)%27/%3E%3C/g%3E%3C/svg%3E");
+        background-size: auto 100%;
+        background-position: left center;
+        background-repeat: repeat-x;
+        animation: leafSway 3s ease-in-out infinite;
+      }
+
+      /* Flowers for horizontal vines */
+      .vine-container .vine-horizontal::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http://www.w3.org/2000/svg%27%20width%3D%27300%27%20height%3D%2732%27%20viewBox%3D%270%200%20300%2032%27%3E%3Cg%20fill%3D%27%23fbbf24%27%20opacity%3D%270.8%27%3E%3Cpolygon%20points%3D%2715,20%2719,22%2719,26%2722,23%2726,24%2724,20%2726,16%2722,17%2719,14%2719,18%27/%3E%3Cpolygon%20points%3D%2735,8%2739,10%2739,14%2742,11%2746,12%2744,8%2746,4%2742,5%2739,2%2739,6%27/%3E%3Cpolygon%20points%3D%2770,24%2774,26%2774,30%2777,27%2781,28%2779,24%2781,20%2777,21%2774,18%2774,22%27/%3E%3Cpolygon%20points%3D%2795,6%2799,8%2799,12%27102,9%27106,10%27104,6%27106,2%27102,3%2799,0%2799,4%27/%3E%3Cpolygon%20points%3D%27125,25%27129,27%27129,31%27132,28%27136,29%27134,25%27136,21%27132,22%27129,19%27129,23%27/%3E%3Cpolygon%20points%3D%27150,9%27154,11%27154,15%27157,12%27161,13%27159,9%27161,5%27157,6%27154,3%27154,7%27/%3E%3C/g%3E%3C/svg%3E");
+        background-size: auto 100%;
+        background-position: left center;
+        background-repeat: repeat-x;
+        animation: sparkle 2s ease-in-out infinite;
+      }
+
+      /* Horizontal animation variants */
+      @keyframes vineGrowHorizontal {
+        0% {
+          clip-path: polygon(0 0, 0 0, 0 100%, 0% 100%);
+          filter: drop-shadow(0 0 0px rgba(34, 197, 94, 0));
+        }
+        50% {
+          filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.6));
+        }
+        100% {
+          clip-path: polygon(0 0%, 100% 0%, 100% 100%, 0% 100%);
+          filter: drop-shadow(0 0 12px rgba(34, 197, 94, 0.8));
+        }
+      }
+
+      .vine-container.loading .vine-horizontal {
+        animation: vineGrowHorizontal 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+      }
     </style>
   </head>
   <body class="bg-gradient-to-br from-green-50 via-emerald-50 to-lime-50 text-gray-900 min-h-screen">
@@ -308,7 +521,7 @@
           <label for="chatPrompt" class="block text-lg font-semibold text-emerald-800 mb-3">
             ✨ AI Prompt Assistant
           </label>
-          <div class="relative">
+          <div class="relative vine-container">
             <textarea
               id="chatPrompt"
               rows="3"
@@ -318,6 +531,12 @@
             <div class="absolute bottom-3 right-3 text-xs text-gray-400">
               <span id="charCount">0</span>/500
             </div>
+            <!-- Vertical vines (left and right sides) -->
+            <div class="vine vine-vertical vine-left"></div>
+            <div class="vine vine-vertical vine-right"></div>
+            <!-- Horizontal vines (top and bottom) -->
+            <div class="vine vine-horizontal vine-top"></div>
+            <div class="vine vine-horizontal vine-bottom"></div>
           </div>
           <button
             id="chatProcessBtn"

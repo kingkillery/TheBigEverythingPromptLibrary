@@ -68,7 +68,7 @@ if ($WithProxy) {
 
 # Build option
 if ($Rebuild) {
-    & $ComposeExe @BaseComposeArgs @ComposeOptions build --pull
+    & $ComposeExe @BaseComposeArgs @ComposeOptions build --pull --no-cache
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
