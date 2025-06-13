@@ -17,7 +17,8 @@
       "WebFetch(domain:docs.anthropic.com)",
       "WebFetch(domain:platform.openai.com)",
       "Bash(curl:*)",
-      "Bash(pip3 install:*)"
+      "Bash(pip3 install:*)",
+      "WebFetch(domain:arxiv.org)"
     ],
     "deny": []
   }
