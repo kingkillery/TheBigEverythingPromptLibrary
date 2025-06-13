@@ -94,7 +94,19 @@ from category_config import (
 
 from rss_news import rss_fetcher
 
+# Import chat API
+try:
+    from chat_api import router as chat_router
+    CHAT_API_AVAILABLE = True
+except ImportError:
+    CHAT_API_AVAILABLE = False
+    print("Chat API not available. Some AI provider dependencies may be missing.")
+
 app = FastAPI(title="Prompt Library API", version="1.0.0")
+
+# Include chat router if available
+if CHAT_API_AVAILABLE:
+    app.include_router(chat_router)
 
 # Configure CORS
 app.add_middleware(
@@ -137,6 +149,7 @@ class ConfigUpdate(BaseModel):
 class ChatRequest(BaseModel):
     prompt: str
     max_results: int = 5
+    format: str = "promptscript"  # Available: promptscript, yaml, plain
 
 class ChatResponse(BaseModel):
     matches: List[PromptItem]
@@ -553,6 +566,17 @@ index_manager = IndexManager()
 async def read_root(request: Request):
     """Serve the frontend HTML"""
     return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/chat", response_class=HTMLResponse)
+async def chat_interface(request: Request):
+    """Serve the AI chat interface"""
+    chat_html_path = Path(__file__).parent.parent / "chat_interface.html"
+    if chat_html_path.exists():
+        with open(chat_html_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return HTMLResponse(content=content)
+    else:
+        return HTMLResponse(content="<h1>Chat Interface Not Found</h1><p>The chat interface file is missing.</p>", status_code=404)
 
 @app.get("/api/ping")
 async def ping():
@@ -1031,9 +1055,18 @@ async def chat_process(request: ChatRequest):
     if matches and not tweaked_match:
         tweaked_match = matches[0].content
 
-    # --- Wrap outputs in PromptScript framework ---
-    optimized_prompt = generate_promptscript("ImprovePrompt", optimized_prompt)
-    tweaked_match = generate_promptscript("ImprovePrompt", tweaked_match) if tweaked_match else ""
+    # --- Format outputs based on requested template ---
+    fmt = request.format.lower() if request.format else "promptscript"
+
+    if fmt == "promptscript":
+        optimized_prompt = generate_promptscript("ImprovePrompt", optimized_prompt)
+        tweaked_match = generate_promptscript("ImprovePrompt", tweaked_match) if tweaked_match else ""
+    elif fmt == "yaml":
+        optimized_prompt = generate_prompt_yaml("ImprovePrompt", optimized_prompt)
+        tweaked_match = generate_prompt_yaml("ImprovePrompt", tweaked_match) if tweaked_match else ""
+    else:  # plain
+        # keep as-is (already plain improved)
+        pass
 
     return ChatResponse(
         matches=matches,
@@ -1622,6 +1655,26 @@ async def iterate_prompt(
 async def get_prompt_versions(prompt_id: str):
     """Return all stored versions of a prompt"""
     return list_prompt_versions(prompt_id)
+
+# ---------------------- Alternative Prompt Generators ----------------------------
+
+def generate_prompt_yaml(task_name: str, input_text: str) -> str:
+    """Return a YAML-formatted instruction block covering the same workflow used in PromptScript."""
+    # Indent the user input safely for YAML literal block style
+    indented_input = "\n".join(["  " + line for line in input_text.split("\n")])
+    yaml_content = (
+        f"# {task_name} prompt generated in YAML format\n"
+        "task: ImprovePrompt\n"
+        "input: |\n"
+        f"{indented_input}\n"
+        "steps:\n"
+        "  - Validate: [clarity, specificity, context]\n"
+        "  - Rewrite:\n"
+        "      style: professional\n"
+        "      domain: general\n"
+        "output: optimized_prompt\n"
+    )
+    return yaml_content
 
 if __name__ == "__main__":
     import uvicorn

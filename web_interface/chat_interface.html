@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Interface - Artificial Garden</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        /* Custom animations and styles */
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: none; }
+        }
+        
+        @keyframes slide-in-right {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        
+        @keyframes pulse-typing {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+        
+        .fade-in { animation: fade-in 0.3s ease-out; }
+        .slide-in-right { animation: slide-in-right 0.3s ease-out; }
+        .pulse-typing { animation: pulse-typing 1s infinite; }
+        
+        .resizer {
+            width: 4px;
+            cursor: col-resize;
+            background: #e5e7eb;
+            transition: background-color 0.2s;
+        }
+        
+        .resizer:hover {
+            background: #10b981;
+        }
+        
+        .artifact-content {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+        
+        .floating-toolbar {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #10b981;
+            border-radius: 10px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #059669;
+        }
+        
+        /* Selection styles */
+        ::selection {
+            background: rgba(16, 185, 129, 0.2);
+        }
+        
+        .artifact-selection {
+            background: rgba(16, 185, 129, 0.15);
+            border-radius: 4px;
+            padding: 2px 4px;
+            margin: -2px -4px;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-green-50 via-emerald-50 to-lime-50">
+    <div id="app">
+        <chat-interface></chat-interface>
+    </div>
+
+    <script>
+        const { createApp, ref, reactive, computed, onMounted, nextTick } = Vue;
+
+        // Chat Interface Component
+        const ChatInterface = {
+            template: `
+                <div class="flex h-screen">
+                    <!-- Navigation Header -->
+                    <div class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-sm border-b border-emerald-100 shadow-sm">
+                        <div class="flex items-center justify-between px-4 py-3">
+                            <div class="flex items-center gap-4">
+                                <button @click="goBack" class="text-emerald-600 hover:text-emerald-700">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                    </svg>
+                                </button>
+                                <h1 class="text-xl font-bold text-emerald-800">🌿 AI Chat Interface</h1>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <select v-model="selectedProvider" class="px-3 py-1 text-sm border border-emerald-200 rounded-lg">
+                                    <option value="openai">OpenAI GPT-4</option>
+                                    <option value="claude">Claude 3.5</option>
+                                    <option value="gemini">Gemini 2.0</option>
+                                </select>
+                                <button @click="showPromptLibrary" class="p-2 text-gray-500 hover:text-emerald-600 rounded-lg hover:bg-emerald-50" title="Browse Prompt Library">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                    </svg>
+                                </button>
+                                <button @click="clearChat" class="p-2 text-gray-500 hover:text-red-600 rounded-lg hover:bg-red-50" title="Clear Chat">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Pane -->
+                    <div 
+                        class="flex flex-col bg-white" 
+                        :style="{ width: chatWidth + '%' }"
+                        style="margin-top: 64px;"
+                    >
+                        <!-- Messages Area -->
+                        <div class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4" ref="messagesContainer">
+                            <div v-if="messages.length === 0" class="flex items-center justify-center h-full text-gray-500">
+                                <div class="text-center">
+                                    <div class="text-6xl mb-4">🌱</div>
+                                    <p class="text-lg">Start a conversation with AI</p>
+                                    <p class="text-sm">Type your message below to begin</p>
+                                </div>
+                            </div>
+                            
+                            <div 
+                                v-for="message in messages" 
+                                :key="message.id" 
+                                class="fade-in"
+                                :class="message.role === 'user' ? 'flex justify-end' : 'flex justify-start'"
+                            >
+                                <div 
+                                    class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg shadow-sm"
+                                    :class="message.role === 'user' 
+                                        ? 'bg-emerald-500 text-white' 
+                                        : 'bg-gray-100 text-gray-800'"
+                                >
+                                    <div v-if="message.role === 'assistant' && message.artifact" class="mb-2">
+                                        <div class="text-xs text-gray-500 mb-1">Created: {{ message.artifact.type }}</div>
+                                        <button 
+                                            @click="openArtifact(message.artifact)"
+                                            class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded hover:bg-emerald-200"
+                                        >
+                                            Open in Canvas →
+                                        </button>
+                                    </div>
+                                    <div v-html="formatMessage(message.content)"></div>
+                                    <div class="text-xs opacity-70 mt-1">
+                                        {{ formatTime(message.timestamp) }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Typing Indicator -->
+                            <div v-if="isTyping" class="flex justify-start fade-in">
+                                <div class="bg-gray-100 px-4 py-2 rounded-lg shadow-sm">
+                                    <div class="flex items-center space-x-1">
+                                        <div class="w-2 h-2 bg-gray-500 rounded-full pulse-typing"></div>
+                                        <div class="w-2 h-2 bg-gray-500 rounded-full pulse-typing" style="animation-delay: 0.2s"></div>
+                                        <div class="w-2 h-2 bg-gray-500 rounded-full pulse-typing" style="animation-delay: 0.4s"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Input Area -->
+                        <div class="border-t border-gray-200 p-4">
+                            <div class="flex gap-2">
+                                <textarea
+                                    v-model="messageInput"
+                                    @keydown="handleKeydown"
+                                    placeholder="Type your message... (Shift+Enter for new line)"
+                                    class="flex-1 border border-gray-300 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400"
+                                    rows="1"
+                                    ref="messageTextarea"
+                                ></textarea>
+                                <button 
+                                    @click="sendMessage"
+                                    :disabled="!messageInput.trim() || isTyping"
+                                    class="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Resizer -->
+                    <div 
+                        class="resizer"
+                        @mousedown="startResize"
+                    ></div>
+                    
+                    <!-- Canvas Pane -->
+                    <div 
+                        class="flex-1 bg-gray-50 border-l border-gray-200" 
+                        style="margin-top: 64px;"
+                        v-show="showCanvas"
+                    >
+                        <artifact-canvas 
+                            v-if="currentArtifact"
+                            :artifact="currentArtifact"
+                            @update-artifact="updateArtifact"
+                            @close="closeArtifact"
+                        ></artifact-canvas>
+                        
+                        <div v-else class="flex items-center justify-center h-full text-gray-500">
+                            <div class="text-center">
+                                <div class="text-6xl mb-4">🎨</div>
+                                <p class="text-lg">Canvas Area</p>
+                                <p class="text-sm">Artifacts will appear here for inline editing</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Prompt Library Modal -->
+                    <div v-if="showPromptModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click="hidePromptLibrary">
+                        <div class="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden" @click.stop>
+                            <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+                                <h2 class="text-lg font-semibold text-gray-800">🌿 Prompt Library</h2>
+                                <button @click="hidePromptLibrary" class="text-gray-500 hover:text-gray-700">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            
+                            <div class="p-4">
+                                <!-- Search prompts -->
+                                <div class="mb-4">
+                                    <input
+                                        v-model="promptSearchQuery"
+                                        @input="searchPrompts"
+                                        type="text"
+                                        placeholder="Search prompts..."
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                                    >
+                                </div>
+                                
+                                <!-- Prompt results -->
+                                <div class="max-h-96 overflow-y-auto custom-scrollbar">
+                                    <div v-if="promptResults.length === 0" class="text-center text-gray-500 py-8">
+                                        <div class="text-4xl mb-2">🔍</div>
+                                        <p>No prompts found. Try a different search term.</p>
+                                    </div>
+                                    
+                                    <div v-else class="space-y-3">
+                                        <div 
+                                            v-for="prompt in promptResults" 
+                                            :key="prompt.id"
+                                            class="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 cursor-pointer"
+                                            @click="usePrompt(prompt)"
+                                        >
+                                            <div class="flex items-start justify-between">
+                                                <div class="flex-1">
+                                                    <h3 class="font-medium text-gray-800">{{ prompt.title }}</h3>
+                                                    <p class="text-sm text-gray-600 mt-1 line-clamp-2">{{ prompt.description }}</p>
+                                                    <div class="flex items-center gap-2 mt-2">
+                                                        <span class="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded">{{ prompt.category }}</span>
+                                                        <span v-if="prompt.subcategory" class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">{{ prompt.subcategory }}</span>
+                                                    </div>
+                                                </div>
+                                                <button class="ml-2 px-3 py-1 bg-emerald-500 text-white text-xs rounded hover:bg-emerald-600">
+                                                    Use Prompt
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const messages = ref([]);
+                const messageInput = ref('');
+                const isTyping = ref(false);
+                const selectedProvider = ref('openai');
+                const chatWidth = ref(50);
+                const currentArtifact = ref(null);
+                const messagesContainer = ref(null);
+                const messageTextarea = ref(null);
+                const showPromptModal = ref(false);
+                const promptSearchQuery = ref('');
+                const promptResults = ref([]);
+                
+                // Prompt library functions
+                let searchTimeout = null;
+                
+                const showPromptLibrary = () => {
+                    showPromptModal.value = true;
+                    // Load popular prompts by default
+                    if (!promptSearchQuery.value) {
+                        loadDefaultPrompts();
+                    }
+                };
+                
+                const hidePromptLibrary = () => {
+                    showPromptModal.value = false;
+                    promptSearchQuery.value = '';
+                    promptResults.value = [];
+                };
+                
+                const loadDefaultPrompts = async () => {
+                    try {
+                        const response = await fetch('/api/search?limit=20&sort_by=popular');
+                        const data = await response.json();
+                        promptResults.value = data.items || [];
+                    } catch (error) {
+                        console.error('Error loading default prompts:', error);
+                        promptResults.value = [];
+                    }
+                };
+                
+                const searchPrompts = async () => {
+                    // Clear existing timeout
+                    if (searchTimeout) {
+                        clearTimeout(searchTimeout);
+                    }
+                    
+                    // Debounce search for better UX
+                    searchTimeout = setTimeout(async () => {
+                        try {
+                            const query = promptSearchQuery.value.trim();
+                            const url = query 
+                                ? `/api/search?query=${encodeURIComponent(query)}&limit=20`
+                                : '/api/search?limit=20&sort_by=popular';
+                            
+                            const response = await fetch(url);
+                            const data = await response.json();
+                            promptResults.value = data.items || [];
+                        } catch (error) {
+                            console.error('Error searching prompts:', error);
+                            promptResults.value = [];
+                        }
+                    }, 300);
+                };
+                
+                const usePrompt = (prompt) => {
+                    // Insert the prompt content into the message input
+                    messageInput.value = prompt.content;
+                    hidePromptLibrary();
+                    
+                    // Focus the message input
+                    nextTick(() => {
+                        if (messageTextarea.value) {
+                            messageTextarea.value.focus();
+                        }
+                    });
+                };
+                
+                const showCanvas = computed(() => currentArtifact.value !== null);
+                
+                const sendMessage = async () => {
+                    if (!messageInput.value.trim() || isTyping.value) return;
+                    
+                    const userMessage = {
+                        id: Date.now(),
+                        role: 'user',
+                        content: messageInput.value,
+                        timestamp: new Date()
+                    };
+                    
+                    messages.value.push(userMessage);
+                    const currentInput = messageInput.value;
+                    messageInput.value = '';
+                    
+                    await nextTick();
+                    scrollToBottom();
+                    
+                    isTyping.value = true;
+                    
+                    try {
+                        const response = await fetch('/api/chat', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                message: currentInput,
+                                provider: selectedProvider.value,
+                                conversation_id: getConversationId()
+                            })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        const assistantMessage = {
+                            id: Date.now() + 1,
+                            role: 'assistant',
+                            content: data.message,
+                            timestamp: new Date(),
+                            artifact: data.artifact || null
+                        };
+                        
+                        messages.value.push(assistantMessage);
+                        
+                        if (data.artifact) {
+                            currentArtifact.value = data.artifact;
+                        }
+                        
+                    } catch (error) {
+                        console.error('Error sending message:', error);
+                        const errorMessage = {
+                            id: Date.now() + 1,
+                            role: 'assistant',
+                            content: 'Sorry, I encountered an error. Please try again.',
+                            timestamp: new Date()
+                        };
+                        messages.value.push(errorMessage);
+                    } finally {
+                        isTyping.value = false;
+                        await nextTick();
+                        scrollToBottom();
+                    }
+                };
+                
+                const handleKeydown = (event) => {
+                    if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault();
+                        sendMessage();
+                    }
+                };
+                
+                const scrollToBottom = () => {
+                    if (messagesContainer.value) {
+                        messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+                    }
+                };
+                
+                const formatMessage = (content) => {
+                    // Simple markdown-like formatting
+                    return content
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                        .replace(/`(.*?)`/g, '<code class="bg-gray-100 px-1 rounded">$1</code>')
+                        .replace(/\n/g, '<br>');
+                };
+                
+                const formatTime = (timestamp) => {
+                    return new Date(timestamp).toLocaleTimeString([], { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                };
+                
+                const openArtifact = (artifact) => {
+                    currentArtifact.value = artifact;
+                };
+                
+                const closeArtifact = () => {
+                    currentArtifact.value = null;
+                };
+                
+                const updateArtifact = (updatedArtifact) => {
+                    currentArtifact.value = updatedArtifact;
+                };
+                
+                const clearChat = () => {
+                    if (confirm('Clear the entire conversation? This cannot be undone.')) {
+                        messages.value = [];
+                        currentArtifact.value = null;
+                    }
+                };
+                
+                const goBack = () => {
+                    window.location.href = '/';
+                };
+                
+                const getConversationId = () => {
+                    return sessionStorage.getItem('conversationId') || 
+                           (() => {
+                               const id = 'conv_' + Date.now();
+                               sessionStorage.setItem('conversationId', id);
+                               return id;
+                           })();
+                };
+                
+                // Resizing functionality
+                const startResize = (event) => {
+                    const startX = event.clientX;
+                    const startWidth = chatWidth.value;
+                    
+                    const doResize = (e) => {
+                        const deltaX = e.clientX - startX;
+                        const newWidth = startWidth + (deltaX / window.innerWidth) * 100;
+                        chatWidth.value = Math.max(20, Math.min(80, newWidth));
+                    };
+                    
+                    const stopResize = () => {
+                        document.removeEventListener('mousemove', doResize);
+                        document.removeEventListener('mouseup', stopResize);
+                    };
+                    
+                    document.addEventListener('mousemove', doResize);
+                    document.addEventListener('mouseup', stopResize);
+                };
+                
+                onMounted(() => {
+                    // Auto-resize textarea
+                    const textarea = messageTextarea.value;
+                    if (textarea) {
+                        textarea.addEventListener('input', () => {
+                            textarea.style.height = 'auto';
+                            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+                        });
+                    }
+                });
+                
+                return {
+                    messages,
+                    messageInput,
+                    isTyping,
+                    selectedProvider,
+                    chatWidth,
+                    currentArtifact,
+                    showCanvas,
+                    messagesContainer,
+                    messageTextarea,
+                    showPromptModal,
+                    promptSearchQuery,
+                    promptResults,
+                    sendMessage,
+                    handleKeydown,
+                    formatMessage,
+                    formatTime,
+                    openArtifact,
+                    closeArtifact,
+                    updateArtifact,
+                    clearChat,
+                    goBack,
+                    startResize,
+                    showPromptLibrary,
+                    hidePromptLibrary,
+                    searchPrompts,
+                    usePrompt
+                };
+            }
+        };
+
+        // Artifact Canvas Component
+        const ArtifactCanvas = {
+            props: ['artifact'],
+            emits: ['update-artifact', 'close'],
+            template: `
+                <div class="h-full flex flex-col">
+                    <!-- Canvas Header -->
+                    <div class="bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-800">{{ artifact.title || 'Untitled Artifact' }}</h2>
+                            <p class="text-sm text-gray-500">{{ artifact.type }} • {{ formatDate(artifact.created_at) }}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <!-- Version Controls -->
+                            <button 
+                                @click="previousVersion"
+                                :disabled="currentVersionIndex <= 0"
+                                class="p-2 text-gray-500 hover:text-emerald-600 disabled:opacity-30"
+                                title="Previous version"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                </svg>
+                            </button>
+                            
+                            <span class="text-xs text-gray-500">
+                                {{ currentVersionIndex + 1 }} / {{ versions.length }}
+                            </span>
+                            
+                            <button 
+                                @click="nextVersion"
+                                :disabled="currentVersionIndex >= versions.length - 1"
+                                class="p-2 text-gray-500 hover:text-emerald-600 disabled:opacity-30"
+                                title="Next version"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </button>
+                            
+                            <div class="w-px h-6 bg-gray-300 mx-2"></div>
+                            
+                            <!-- Action Buttons -->
+                            <button 
+                                @click="copyContent"
+                                class="p-2 text-gray-500 hover:text-emerald-600"
+                                title="Copy content"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a1 1 0 011 1v3M9 12l2 2 4-4"></path>
+                                </svg>
+                            </button>
+                            
+                            <button 
+                                @click="downloadContent"
+                                class="p-2 text-gray-500 hover:text-emerald-600"
+                                title="Download"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                            </button>
+                            
+                            <button 
+                                @click="$emit('close')"
+                                class="p-2 text-gray-500 hover:text-red-600"
+                                title="Close"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Content Area -->
+                    <div class="flex-1 relative">
+                        <div 
+                            class="h-full p-4 overflow-auto custom-scrollbar artifact-content"
+                            @mouseup="handleSelection"
+                            @keyup="handleSelection"
+                            ref="contentArea"
+                        >
+                            <div v-if="artifact.type === 'code'">
+                                <pre><code>{{ currentContent }}</code></pre>
+                            </div>
+                            <div v-else-if="artifact.type === 'html'" v-html="currentContent"></div>
+                            <div v-else class="whitespace-pre-wrap">{{ currentContent }}</div>
+                        </div>
+                        
+                        <!-- Floating Toolbar -->
+                        <div 
+                            v-if="showFloatingToolbar"
+                            class="floating-toolbar absolute z-10 px-3 py-2 rounded-lg shadow-lg border"
+                            :style="{ left: toolbarPosition.x + 'px', top: toolbarPosition.y + 'px' }"
+                        >
+                            <div class="flex items-center gap-2">
+                                <button 
+                                    @click="improveSelection"
+                                    class="px-3 py-1 text-xs bg-emerald-500 text-white rounded hover:bg-emerald-600"
+                                >
+                                    Improve
+                                </button>
+                                <button 
+                                    @click="explainSelection"
+                                    class="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                                >
+                                    Explain
+                                </button>
+                                <button 
+                                    @click="hideFloatingToolbar"
+                                    class="px-2 py-1 text-xs text-gray-500 hover:text-gray-700"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup(props, { emit }) {
+                const versions = ref([{ 
+                    id: 1, 
+                    content: props.artifact.content, 
+                    timestamp: new Date() 
+                }]);
+                const currentVersionIndex = ref(0);
+                const showFloatingToolbar = ref(false);
+                const toolbarPosition = ref({ x: 0, y: 0 });
+                const selectedText = ref('');
+                const contentArea = ref(null);
+                
+                const currentContent = computed(() => {
+                    return versions.value[currentVersionIndex.value]?.content || '';
+                });
+                
+                const handleSelection = () => {
+                    const selection = window.getSelection();
+                    if (selection.rangeCount > 0 && !selection.isCollapsed) {
+                        const range = selection.getRangeAt(0);
+                        const rect = range.getBoundingClientRect();
+                        selectedText.value = selection.toString();
+                        
+                        toolbarPosition.value = {
+                            x: rect.left + rect.width / 2 - 100,
+                            y: rect.top - 50
+                        };
+                        
+                        showFloatingToolbar.value = true;
+                    } else {
+                        hideFloatingToolbar();
+                    }
+                };
+                
+                const hideFloatingToolbar = () => {
+                    showFloatingToolbar.value = false;
+                    selectedText.value = '';
+                };
+                
+                const improveSelection = async () => {
+                    if (!selectedText.value) return;
+                    
+                    const prompt = `Please improve this text: "${selectedText.value}"`;
+                    await processSelection(prompt);
+                };
+                
+                const explainSelection = async () => {
+                    if (!selectedText.value) return;
+                    
+                    const prompt = `Please explain this: "${selectedText.value}"`;
+                    // For explanation, we might want to show in chat instead of editing
+                    console.log('Explain:', prompt);
+                };
+                
+                const processSelection = async (prompt) => {
+                    try {
+                        // Show loading state
+                        showFloatingToolbar.value = false;
+                        
+                        const response = await fetch('/api/edit-artifact', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                artifact_id: props.artifact.id,
+                                selected_text: selectedText.value,
+                                prompt: prompt,
+                                full_content: currentContent.value
+                            })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success && data.new_content) {
+                            // Add new version
+                            versions.value.push({
+                                id: versions.value.length + 1,
+                                content: data.new_content,
+                                timestamp: new Date()
+                            });
+                            
+                            currentVersionIndex.value = versions.value.length - 1;
+                            
+                            // Show success feedback
+                            showSuccessToast('Content updated successfully!');
+                        } else {
+                            throw new Error(data.error || 'Failed to update content');
+                        }
+                        
+                    } catch (error) {
+                        console.error('Error processing selection:', error);
+                        showErrorToast('Failed to update content. Please try again.');
+                    }
+                };
+                
+                const previousVersion = () => {
+                    if (currentVersionIndex.value > 0) {
+                        currentVersionIndex.value--;
+                    }
+                };
+                
+                const nextVersion = () => {
+                    if (currentVersionIndex.value < versions.value.length - 1) {
+                        currentVersionIndex.value++;
+                    }
+                };
+                
+                const copyContent = async () => {
+                    try {
+                        await navigator.clipboard.writeText(currentContent.value);
+                        // Show toast notification
+                        console.log('Content copied!');
+                    } catch (error) {
+                        console.error('Failed to copy:', error);
+                    }
+                };
+                
+                const downloadContent = () => {
+                    const blob = new Blob([currentContent.value], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${props.artifact.title || 'artifact'}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                };
+                
+                const formatDate = (date) => {
+                    return new Date(date).toLocaleString();
+                };
+                
+                const showSuccessToast = (message) => {
+                    const toast = document.createElement('div');
+                    toast.className = 'fixed bottom-6 right-6 bg-emerald-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 text-sm font-medium fade-in';
+                    toast.textContent = message;
+                    document.body.appendChild(toast);
+                    
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 3000);
+                };
+                
+                const showErrorToast = (message) => {
+                    const toast = document.createElement('div');
+                    toast.className = 'fixed bottom-6 right-6 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 text-sm font-medium fade-in';
+                    toast.textContent = message;
+                    document.body.appendChild(toast);
+                    
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 3000);
+                };
+                
+                return {
+                    versions,
+                    currentVersionIndex,
+                    currentContent,
+                    showFloatingToolbar,
+                    toolbarPosition,
+                    contentArea,
+                    handleSelection,
+                    hideFloatingToolbar,
+                    improveSelection,
+                    explainSelection,
+                    previousVersion,
+                    nextVersion,
+                    copyContent,
+                    downloadContent,
+                    formatDate
+                };
+            }
+        };
+
+        // Create Vue App
+        const app = createApp({
+            components: {
+                ChatInterface,
+                ArtifactCanvas
+            }
+        });
+
+        app.component('chat-interface', ChatInterface);
+        app.component('artifact-canvas', ArtifactCanvas);
+        
+        app.mount('#app');
+    </script>
+</body>
+</html>

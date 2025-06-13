@@ -1540,15 +1540,24 @@
     "Guides_06102025-gemini-grounding-techniques-comprehensive-guide",
     "Guides_06102025-huggingface-open-source-ai-comprehensive-guide",
     "Guides_06112025-gemini-function-calling-comprehensive-guide",
+    "Guides_06122025-advanced-function-calling-tool-integration-guide",
+    "Guides_06122025-advanced-prompt-engineering-2025-comprehensive-guide",
+    "Guides_06122025-gemini-2-0-flash-prompting-techniques",
+    "Guides_06122025-meta-prompting-advanced-techniques-guide",
+    "Guides_06122025-reasoning-models-prompting-guide",
     "Guides_08062025-claude-tool-use-comprehensive-guide",
     "Guides_08062025-cursor-ai-cursorrules-comprehensive-guide",
     "Guides_08062025-openai-multi-tool-orchestration-rag-guide",
     "Guides_09062025-promptfoo-evaluation-guide",
     "Guides_09062025-voyage-ai-embeddings-guide",
     "Guides_12122025-anthropic-prompt-engineering-best-practices",
+    "Guides_12122025-constitutional-ai-alignment-comprehensive-guide",
+    "Guides_12122025-evoprompt-evolutionary-optimization-guide",
+    "Guides_12122025-many-shot-in-context-learning-comprehensive-guide",
     "Guides_12122025-prompt-engineering-quick-reference",
     "Guides_12122025-ultimate-prompt-engineering-comprehensive-guide",
     "Articles_06082025-github-prompt-libraries-engineering-resources-research",
+    "Articles_12122025-comprehensive-prompt-engineering-research-2024-2025",
     "Articles_chatgpt-bio-and-memory",
     "Articles_chatgpt-code-pkglist-08232024",
     "Articles_chatgpt-code-python-pkglist-08232024",
@@ -1646,6 +1655,7 @@
     "SystemPrompts_12142023-Grok",
     "Security_06092025-llm-security-prompt-injection-defense",
     "Security_06102025-ai-security-prompt-injection-defense-comprehensive-guide",
+    "Security_12122025-advanced-prompt-injection-defense-2025",
     "Security_10 rules of protection and misdirection",
     "Security_100 Life points",
     "Security_Abuse Resistance",
@@ -1704,8 +1714,8 @@
     "Jailbreak_jb1"
   ],
   "embedding_shape": [
-    1701,
+    1711,
     384
   ],
-  "created_at": "2025-06-13T03:24:49"
+  "created_at": "2025-06-13T04:41:22"
 }
