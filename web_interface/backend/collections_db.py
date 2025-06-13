@@ -434,5 +434,39 @@ def list_prompt_versions(original_prompt_id: str):
         ]
 
 
-# Initialize DB when module imported
-init_db() 
+# ------------------ Bulk usage stats -----------------------------------
+
+
+def get_usage_stats_bulk(prompt_ids: List[str]) -> Dict[str, Dict[str, int]]:
+    """Return a mapping of prompt_id -> {views, grafts}. Missing ids default to 0.
+
+    Parameters
+    ----------
+    prompt_ids: list[str]
+        List of prompt identifiers to retrieve.
+    """
+
+    if not prompt_ids:
+        return {}
+
+    placeholders = ",".join(["?"] * len(prompt_ids))
+    with _get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            f"SELECT prompt_id, views, grafts FROM usage_stats WHERE prompt_id IN ({placeholders})",
+            prompt_ids,
+        )
+        rows = cur.fetchall()
+
+    stats = {pid: {"views": 0, "grafts": 0} for pid in prompt_ids}
+    for pid, views, grafts in rows:
+        stats[pid] = {"views": views, "grafts": grafts}
+    return stats
+
+
+# Ensure DB schema exists on module import
+try:
+    init_db()
+except Exception:
+    # If multiple workers import concurrently we ignore race
+    pass 

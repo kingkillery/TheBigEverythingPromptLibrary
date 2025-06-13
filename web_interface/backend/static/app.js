@@ -226,7 +226,10 @@ async function search() {
     // Show sort options if we have results
     document.getElementById("sortOptions").classList.toggle("hidden", data.total === 0);
     
+    const promptIds = [];
+
     data.items.forEach((item, index) => {
+      promptIds.push(item.id);
       const div = document.createElement("div");
       div.className = "p-6 bg-white/80 backdrop-blur-sm border-2 border-gray-100 rounded-2xl shadow-lg hover:shadow-2xl hover:border-emerald-300 card-interactive cursor-pointer group";
       div.style.animationDelay = `${index * 0.1}s`;
@@ -254,7 +257,8 @@ async function search() {
         </div>
         <p class='text-gray-600 mb-3 line-clamp-3'>${item.description}</p>
         <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2 text-sm text-gray-500">
+          <div class="flex items-center gap-3 text-sm text-gray-500">
+            <span>💧 <span class="water-count" data-pid="${item.id}">0</span></span>
             <span>📝</span>
             <span>Click to explore</span>
           </div>
@@ -277,6 +281,19 @@ async function search() {
       
       container.appendChild(div);
     });
+    
+    // Fetch water/view counts in bulk
+    if (promptIds.length) {
+      try {
+        const stats = await fetchJSON(`/api/usage-stats?ids=${promptIds.join(',')}`);
+        Object.entries(stats).forEach(([pid, s]) => {
+          const el = document.querySelector(`.water-count[data-pid="${pid}"]`);
+          if (el) el.textContent = s.grafts ?? 0;
+        });
+      } catch (err) {
+        console.warn('Could not load usage stats', err);
+      }
+    }
     
     // Hide loading skeleton
     showLoadingSkeleton(false);
@@ -716,6 +733,14 @@ function renderPromptModal(item) {
       if (res.ok) {
         waterBtn.innerHTML = `<span>💧</span><span>Watered!</span>`;
         createConfetti();
+
+        // Increment water count badge if present in list view
+        const badge = document.querySelector(`.water-count[data-pid="${item.id}"]`);
+        if (badge) {
+          const current = parseInt(badge.textContent || '0', 10);
+          badge.textContent = current + 1;
+        }
+
         setTimeout(() => { waterBtn.innerHTML = original; }, 2000);
       } else {
         waterBtn.innerHTML = original;

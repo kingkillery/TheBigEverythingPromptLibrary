@@ -1,9 +1,8 @@
-from __future__ import annotations
-"""Light‑weight content‑moderation helper.
+"""Light-weight content-moderation helper.
 
 The helper provides a *fast* offline regex screen and, when an
-``OPENAI_API_KEY`` is available, upgrades seamlessly to OpenAI’s
-text‑moderation endpoint.
+``OPENAI_API_KEY`` is available, upgrades seamlessly to OpenAI's
+text-moderation endpoint.
 
 Public API
 ==========
@@ -14,15 +13,15 @@ Public API
 
 Key Enhancements
 ----------------
-* **Category‑aware regex fallback** instead of a single mega‑regex.
+* **Category-aware regex fallback** instead of a single mega-regex.
 * **Aggressive caching** to avoid duplicate network requests in the same
-  process (SHA‑256 keyed).
-* **Timeout‑resilient**: hard 10 s timeout on the HTTP request; automatic
+  process (SHA-256 keyed).
+* **Timeout-resilient**: hard 10 s timeout on the HTTP request; automatic
   downgrade to regex on *any* exception.
-* **Explicit category mapping** to align the regex fallback with OpenAI’s
+* **Explicit category mapping** to align the regex fallback with OpenAI's
   official moderation categories so downstream code can treat both the same.
-* **Tiny footprint** – no heavyweight third‑party deps; will work inside the
-  existing repo’s dependency set (just needs `httpx`).
+* **Tiny footprint** – no heavyweight third-party deps; will work inside the
+  existing repo's dependency set (just needs `httpx`).
 """
 
 from __future__ import annotations
@@ -62,14 +61,14 @@ _REGEX_CATEGORIES: Dict[str, List[str]] = {
 _COMPILED_REGEX = {cat: re.compile("|".join(pats), re.IGNORECASE) for cat, pats in _REGEX_CATEGORIES.items()}
 
 # ---------------------------------------------------------------------------
-# In‑memory result cache (hash -> (ok, categories)) so duplicate prompts in a
-# single run don’t hit the network repeatedly.
+# In-memory result cache (hash -> (ok, categories)) so duplicate prompts in a
+# single run don't hit the network repeatedly.
 # ---------------------------------------------------------------------------
 _CACHE: Dict[str, Tuple[bool, List[str]]] = {}
 
 
 async def _call_openai(prompt: str, api_key: str) -> Tuple[bool, List[str]]:
-    """Thin asynchronous wrapper around OpenAI’s moderation endpoint."""
+    """Thin asynchronous wrapper around OpenAI's moderation endpoint."""
 
     url = "https://api.openai.com/v1/moderations"
     headers = {
@@ -77,11 +76,11 @@ async def _call_openai(prompt: str, api_key: str) -> Tuple[bool, List[str]]:
         "Content-Type": "application/json",
     }
     json_payload = {
-        "model": "text-moderation-latest",  # 2025‑06 default tier
-        "input": prompt[:20_000],  # safety‑cut absurdly large prompts
+        "model": "text-moderation-latest",  # 2025-06 default tier
+        "input": prompt[:20_000],  # safety-cut absurdly large prompts
     }
 
-    async with httpx.AsyncClient(timeout=10.0) as client:  # 10 s hard timeout
+    async with httpx.AsyncClient(timeout=10.0) as client:  # 10 s hard timeout
         response = await client.post(url, headers=headers, json=json_payload)
         response.raise_for_status()
         data = response.json()
@@ -93,7 +92,7 @@ async def _call_openai(prompt: str, api_key: str) -> Tuple[bool, List[str]]:
 
 
 def _regex_scan(prompt: str) -> Tuple[bool, List[str]]:
-    """Ultra‑fast local scan returning the same (ok, categories) tuple."""
+    """Ultra-fast local scan returning the same (ok, categories) tuple."""
 
     tripped: List[str] = []
     for cat, regex in _COMPILED_REGEX.items():
@@ -107,12 +106,12 @@ async def moderate(prompt: str) -> Tuple[bool, List[str]]:
 
     * The function is **asynchronous** so the caller can schedule many in
       parallel.
-    * Results are cached in‑process keyed by SHA‑256 of the prompt text.
+    * Results are cached in-process keyed by SHA-256 of the prompt text.
     * Falls back silently to the regex scanner on *any* exception from the
       API call.
     """
 
-    key = hashlib.sha256(prompt.encode("utf‑8")).hexdigest()
+    key = hashlib.sha256(prompt.encode("utf-8")).hexdigest()
     if key in _CACHE:
         return _CACHE[key]
 
@@ -137,12 +136,13 @@ async def moderate(prompt: str) -> Tuple[bool, List[str]]:
 # ---------------------------------------------------------------------------
 
 def moderate_sync(prompt: str) -> Tuple[bool, List[str]]:  # pragma: no cover – simple wrapper
-    """Blocking wrapper around ``moderate`` for codebases that aren’t async‑aware."""
+    """Blocking wrapper around ``moderate`` for codebases that aren't async-aware."""
 
     try:
         return asyncio.run(moderate(prompt))
     except RuntimeError:
-        # If we are already inside an event‑loop (e.g. inside a FastAPI handler)
+        # If we are already inside an event-loop (e.g. inside a FastAPI handler)
         # just get the running loop and schedule a task.
         loop = asyncio.get_event_loop()
         return loop.run_until_complete(moderate(prompt))
+    

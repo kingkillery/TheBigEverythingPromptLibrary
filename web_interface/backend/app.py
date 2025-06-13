@@ -80,6 +80,7 @@ from collections_db import (
     delete_chain,
     create_prompt_version,
     list_prompt_versions,
+    get_usage_stats_bulk,
 )
 
 # Import category configuration
@@ -1777,6 +1778,19 @@ async def water_prompt(prompt_id: str, user_id: str = Header("", alias="X-User-I
         return {"ok": True}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
+
+# -------------------- Usage stats endpoint --------------------
+
+@app.get("/api/usage-stats")
+async def get_usage_stats(ids: str = Query(..., description="Comma-separated prompt IDs")):
+    """Return views & water counts for the given prompt IDs."""
+
+    id_list = [pid.strip() for pid in ids.split(",") if pid.strip()]
+    if not id_list:
+        raise HTTPException(status_code=400, detail="No prompt IDs provided")
+
+    stats = get_usage_stats_bulk(id_list)
+    return stats
 
 if __name__ == "__main__":
     import uvicorn
