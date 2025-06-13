@@ -31,19 +31,28 @@ Welcome to your one-stop collection for **prompts that actually work**! This rep
 
 Explore the entire library with fuzzy / semantic search, quality filters, and LLM-powered utilities using our built-in **FastAPI web interface**.
 
+## 🌻 Digital Prompt Garden (new!)
+
+The library now ships with an **interactive "Prompt Garden" UI** that lets anyone — no Git skills required — browse, remix and contribute prompts in a playful way.
+
+### Key interactions
+
+| Action | Metaphor | What it does |
+|--------|----------|--------------|
+| **Plant 🌱** | Submit a prompt seed | Opens a form where you paste/author a prompt. The seed passes a multi-stage LLM pipeline (safety ➜ alignment ➜ quality ➜ duplicate-check). If it sprouts, the prompt is auto-committed to the repo under the right category. |
+| **Water 💧** | Up-vote / nurture | Click the blue button on any prompt to show appreciation. Counts are stored in SQLite and rendered on every card. |
+| **Canvas 🖌️** | Prune & graft | Full-screen editor where you can iterate on a prompt, enhance it with AI, then re-plant the improved version. |
+
+All submissions are moderated automatically; nothing unsafe ever reaches the main branch.
+
+### Launch the Garden locally
 ```powershell
-# one-command start (requires Docker Desktop or compatible engine)
- git clone https://github.com/kingkillery/TheBigEverythingPromptLibrary.git
- cd TheBigEverythingPromptLibrary
- docker compose up -d      # or: make quick-start
+cd web_interface\backend
+python -m uvicorn app:app --reload  # requires Python 3.10+
 ```
+then open http://localhost:8000.
 
-Open **http://localhost:8000** in your browser.
-
-• API docs live at **/docs**  
-• Need advanced profiles or dev mode? See [Docker Setup Guide](./DOCKER_SETUP.md).
-
-Prefer to run without Docker? Follow the instructions in [web_interface/README.md](./web_interface/README.md).
+Docker users can just `docker compose up -d` at repo root as before.
 
 ## Contributing Your Prompts
 

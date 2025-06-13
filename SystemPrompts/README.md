@@ -122,3 +122,8 @@ System prompts / instructions of various LLM systems.
 - [Manus.im - 03/09/2025](./Misc/03092025-Manus.md)
 - [Providence/Swedish Hospital - Grace chatbot - 12/18/2024](./Misc/12182024-providence-chatbot-grace.md)
 - [Codium's Windsurf Editor - 10/18/2024](./Misc/12082024-codium-windsurf-editor.md)
+
+---
+
+## 🌱 Contribute System Prompts
+Have you extracted or reverse-engineered a new system prompt? Submit it via the **Digital Prompt Garden** (Plant ➜ category hint *SystemPrompts*). After moderation, the bot will create the markdown file in this directory.

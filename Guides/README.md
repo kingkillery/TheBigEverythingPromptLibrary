@@ -47,6 +47,16 @@ Comprehensive guides for AI tools, prompting techniques, and development workflo
 - **Anthropic**: Claude Tool Use Guide, Promptfoo Evaluation Guide, Voyage AI Embeddings Guide
 - **Cursor**: Cursor AI Configuration Guide
 
+## 🌱 Contribute New Guides
+
+Want to share a guide of your own? Use the **Digital Prompt Garden** UI:
+1. Open http://localhost:8000 (or the hosted site).
+2. Click **Plant Prompt → Canvas 🖌️** and paste / write your guide.
+3. Pick a *Guide* category hint and submit.
+4. If it passes the moderation & quality pipeline it will be auto-committed to `Guides/`.
+
+No Git workflow needed—the garden bot handles filenames, front-matter, and the PR.
+
 ---
 
 *All guides include practical examples, code snippets, and real-world implementation patterns.*

@@ -44,3 +44,6 @@ This directory contains documented jailbreak techniques for various LLM systems.
 
 - **[Security Documentation](../Security/README.md)** - Defense techniques and protection methods
 - **[System Prompts](../SystemPrompts/README.md)** - Official system prompts with security implementations
+
+## 🌱 Share New Jailbreak Findings
+Discovered a novel jailbreak or red-team prompt? Use the Prompt Garden's **Plant** flow.  Once it passes safety review (we block disallowed content but allow ethical research examples) it will be merged here automatically.

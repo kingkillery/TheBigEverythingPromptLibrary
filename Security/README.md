@@ -55,6 +55,12 @@ The `GPT-Protections/` directory contains 40+ curated protection techniques for 
 
 ## 🤝 Contributing
 
+### 🌱 Contribute via the Prompt Garden
+
+Have a new defense pattern or vulnerability write-up? Open the web interface and **Plant** it. After clearing automatic safety checks it appears here without a manual PR.
+
+---
+
 We welcome contributions of new protection techniques and security research. Please ensure:
 - Techniques are tested and documented
 - Clear categorization by complexity level
