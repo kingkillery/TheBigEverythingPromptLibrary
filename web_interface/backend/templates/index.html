@@ -542,6 +542,15 @@
             ✨ AI Prompt Assistant
           </label>
           <div class="relative vine-container">
+            <!-- Prompt format selector -->
+            <div class="absolute top-3 right-3 flex items-center gap-2 z-10">
+              <label for="promptFormat" class="text-xs text-gray-500 hidden sm:inline">Format:</label>
+              <select id="promptFormat" class="border border-gray-300 rounded-md text-xs px-1 py-0.5 focus:outline-none focus:ring-2 focus:ring-emerald-300 bg-white">
+                <option value="promptscript">PromptScript</option>
+                <option value="yaml">YAML</option>
+                <option value="plain">Plain</option>
+              </select>
+            </div>
             <textarea
               id="chatPrompt"
               rows="3"
