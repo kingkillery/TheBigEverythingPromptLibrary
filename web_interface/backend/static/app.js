@@ -752,6 +752,16 @@ function renderPromptModal(item) {
   });
   actions.appendChild(waterBtn);
 
+  // Canvas editor button
+  const canvasBtn = document.createElement("button");
+  canvasBtn.className = "px-6 py-3 bg-gradient-to-r from-yellow-400 to-amber-500 text-white rounded-xl hover:from-yellow-500 hover:to-amber-600 text-sm font-medium transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2";
+  canvasBtn.innerHTML = `<span>🖌️</span><span>Edit in Canvas</span>`;
+  canvasBtn.addEventListener("click", () => {
+    overlay.remove();
+    openCanvasEditor(item);
+  });
+  actions.appendChild(canvasBtn);
+
   modal.appendChild(actions);
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
@@ -1416,4 +1426,104 @@ loadAiNews();
 if (document.readyState !== "loading") {
   // The script was loaded after DOMContentLoaded; fire the event handler manually so UI hooks attach.
   window.dispatchEvent(new Event("DOMContentLoaded"));
+}
+
+// ---------------- Canvas Editor ------------------ //
+
+function openCanvasEditor(originalItem) {
+  const existing = document.getElementById("canvasOverlay");
+  if (existing) existing.remove();
+
+  const overlay = document.createElement("div");
+  overlay.id = "canvasOverlay";
+  overlay.className = "fixed inset-0 bg-black/60 flex items-center justify-center z-60";
+
+  overlay.innerHTML = `
+    <div class="bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl w-11/12 max-w-5xl max-h-[90vh] overflow-y-auto p-8 relative border border-amber-200">
+      <h2 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-amber-600 mb-6 flex items-center gap-2">
+        🖌️ Prompt Canvas
+      </h2>
+
+      <label class="block mb-4">
+        <span class="block text-sm font-medium text-gray-700 mb-1">Title</span>
+        <input id="canvasTitle" type="text" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-amber-400" value="${(originalItem && originalItem.title) || ''}">
+      </label>
+
+      <label class="block mb-6">
+        <span class="block text-sm font-medium text-gray-700 mb-1">Prompt Text</span>
+        <textarea id="canvasText" rows="12" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-amber-400">${(originalItem && (originalItem.full_content || originalItem.content)) || ''}</textarea>
+      </label>
+
+      <div class="flex flex-wrap gap-3 justify-end">
+        <button id="canvasEnhanceBtn" class="px-5 py-3 bg-gradient-to-r from-fuchsia-500 to-pink-600 text-white rounded-lg hover:from-fuchsia-600 hover:to-pink-700 flex items-center gap-2 shadow-md">
+          <span>✨</span><span>Enhance with AI</span>
+        </button>
+        <button id="canvasPlantBtn" class="px-5 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-lg hover:from-emerald-600 hover:to-green-700 flex items-center gap-2 shadow-md">
+          <span>🌱</span><span>Plant to Garden</span>
+        </button>
+        <button id="canvasCloseBtn" class="px-5 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 shadow-md">Close</button>
+      </div>
+    </div>`;
+
+  // Close handler
+  overlay.querySelector('#canvasCloseBtn').addEventListener('click', () => overlay.remove());
+
+  // Enhance handler – simple dialog with option list reused from graftOptions
+  overlay.querySelector('#canvasEnhanceBtn').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<div class="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent"></div><span>Thinking…</span>';
+    const text = overlay.querySelector('#canvasText').value.trim();
+    if (!text) { showSuccessToast('Prompt text is empty', 'error'); btn.innerHTML = orig; return; }
+    try {
+      const res = await postJSON('/api/llm/enhance', { prompt: text, type: 'improve' });
+      const newText = res.enhanced_content || res.result || res.text || '';
+      if (newText) {
+        overlay.querySelector('#canvasText').value = newText;
+        showSuccessToast('Prompt enhanced! ✨');
+      } else {
+        showSuccessToast('No enhancement returned', 'error');
+      }
+    } catch(err) {
+      showSuccessToast('Enhancement failed', 'error');
+      console.error(err);
+    }
+    btn.innerHTML = orig;
+  });
+
+  // Plant handler
+  overlay.querySelector('#canvasPlantBtn').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<div class="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent"></div><span>Planting…</span>';
+
+    const title = overlay.querySelector('#canvasTitle').value.trim();
+    const promptText = overlay.querySelector('#canvasText').value.trim();
+    if (!title || !promptText) { showSuccessToast('Title and prompt required', 'error'); btn.innerHTML = orig; return; }
+
+    try {
+      const res = await postJSON('/api/plant', {
+        title: title,
+        prompt: promptText,
+        category_hint: originalItem ? originalItem.category : '',
+        user_id: getUserId(),
+      });
+
+      if (res.accepted) {
+        showSuccessToast('Prompt planted successfully! 🌱');
+        createConfetti();
+        overlay.remove();
+        // Refresh search results to show the new plant
+        search();
+      } else {
+        showSuccessToast(`Rejected at stage: ${res.stage_failed}`, 'error');
+      }
+    } catch(err) {
+      console.error(err);
+      showSuccessToast('Planting failed', 'error');
+    }
+    btn.innerHTML = orig;
+  });
+
+  document.body.appendChild(overlay);
 }
