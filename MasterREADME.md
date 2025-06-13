@@ -2,7 +2,7 @@
 
 > Your comprehensive navigator for **1,800+ AI prompts, system prompts, and custom instructions**
 
-[![Repository Stats](https://img.shields.io/badge/Total_Files-1800+-blue)](.) [![System Prompts](https://img.shields.io/badge/System_Prompts-90+-green)](./SystemPrompts/) [![Custom Instructions](https://img.shields.io/badge/Custom_Instructions-1669+-orange)](./CustomInstructions/) [![Guides](https://img.shields.io/badge/Comprehensive_Guides-7-purple)](./Guides/)
+[![Repository Stats](https://img.shields.io/badge/Total_Files-1800+-blue)](.) [![System Prompts](https://img.shields.io/badge/System_Prompts-90+-green)](./SystemPrompts/) [![Custom Instructions](https://img.shields.io/badge/Custom_Instructions-1669+-orange)](./CustomInstructions/) [![Guides](https://img.shields.io/badge/Comprehensive_Guides-12-purple)](./Guides/) [![Research](https://img.shields.io/badge/Research_Papers-2025-red)](./Articles/)
 
 ## 🚀 Quick Navigation
 
@@ -22,10 +22,10 @@
 📂 Total Content Inventory:
 ├── 🤖 System Prompts: 90 files (Latest models from 15+ platforms)
 ├── 🎯 Custom Instructions: 1,669 files (Ready-to-use AI configurations)
-├── 📖 Comprehensive Guides: 7 files (In-depth tutorials)
-├── 📝 Learning Articles: 6 files (Research & education)
+├── 📖 Comprehensive Guides: 12 files (In-depth tutorials & cutting-edge techniques)
+├── 📝 Learning Articles: 7 files (Research & education + 2025 research collection)
 ├── 🔓 Advanced Techniques: 15+ files (Jailbreak & security research)
-└── 🛡️ Security Research: 50+ files (Protection & analysis)
+└── 🛡️ Security Research: 51+ files (Protection & analysis + 2025 defenses)
 ```
 
 ---
@@ -124,6 +124,9 @@
 | **[Voyage AI Embeddings Guide](./Guides/09062025-voyage-ai-embeddings-guide.md)** | Anthropic | 🟡 Intermediate | Generate embeddings with Voyage AI for Claude RAG |
 | **[Promptfoo Evaluation Guide](./Guides/09062025-promptfoo-evaluation-guide.md)** | Anthropic | 🟡 Intermediate | Evaluate prompts using Promptfoo |
 | **[OpenAI Multi-Tool Orchestration](./Guides/08062025-openai-multi-tool-orchestration-rag-guide.md)** | OpenAI | 🔴 Advanced | RAG and multi-tool integration patterns |
+| **[Many-Shot In-Context Learning](./Guides/12122025-many-shot-in-context-learning-comprehensive-guide.md)** | All | 🔴 Advanced | Advanced prompting with hundreds/thousands of examples |
+| **[EvoPrompt: Evolutionary Optimization](./Guides/12122025-evoprompt-evolutionary-optimization-guide.md)** | All | 🔴 Advanced | Automated prompt optimization using evolutionary algorithms |
+| **[Constitutional AI & Alignment](./Guides/12122025-constitutional-ai-alignment-comprehensive-guide.md)** | All | 🔴 Advanced | Building helpful, harmless, honest AI systems |
 
 ---
 
@@ -134,6 +137,7 @@
 📋 **Full Index**: [Articles README](./Articles/README.md)
 
 ### Research Papers & Analysis
+- **[Comprehensive Prompt Engineering Research Collection (2024-2025)](./Articles/12122025-comprehensive-prompt-engineering-research-2024-2025.md)** - ⭐ **NEW** Curated collection of 13 cutting-edge research papers
 - **[GitHub Prompt Libraries Research](./Articles/06082025-github-prompt-libraries-engineering-resources-research.md)** - Comprehensive ecosystem analysis
 - **[A Tale of Reverse Engineering 1001 GPTs](./Articles/recon2024-bigbadugly/)** - DEF CON 32 research presentation
 
@@ -154,6 +158,7 @@
 - **[Cohere Techniques](./Jailbreak/Cohere/)** - Cohere model research
 
 ### Security Research
+- **[Advanced Prompt Injection Defense Strategies (2025)](./Security/12122025-advanced-prompt-injection-defense-2025.md)** - ⭐ **NEW** Cutting-edge defense mechanisms
 - **[GPT Protection Methods](./Security/GPT-Protections/)** - 50+ protection techniques
 - **[Prompt Injection Research](./Security/)** - Defense strategies and analysis
 
@@ -215,10 +220,10 @@ Got a prompt that consistently delivers great results? We welcome contributions!
 - **Total Files**: 1,800+ (Markdown, images, documents)
 - **System Prompts**: 90 files across 15+ platforms
 - **Custom Instructions**: 1,669 files (1,659 ChatGPT + others)
-- **Guides**: 5 comprehensive tutorials
-- **Research Articles**: 6 educational resources
+- **Guides**: 12 comprehensive tutorials (including 2025 research-based guides)
+- **Research Articles**: 7 educational resources (including 2025 research collection)
 - **Contributors**: Community-driven development
-- **Last Updated**: December 2024
+- **Last Updated**: December 2025
 
 ### 🛡️ Legal & Ethics
 - **Educational Purpose**: All content shared for learning and research
