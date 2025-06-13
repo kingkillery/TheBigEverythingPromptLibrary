@@ -1545,10 +1545,15 @@
     "Guides_08062025-openai-multi-tool-orchestration-rag-guide",
     "Guides_09062025-promptfoo-evaluation-guide",
     "Guides_09062025-voyage-ai-embeddings-guide",
+    "Guides_12122025-anthropic-prompt-engineering-best-practices",
+    "Guides_12122025-prompt-engineering-quick-reference",
+    "Guides_12122025-ultimate-prompt-engineering-comprehensive-guide",
     "Articles_06082025-github-prompt-libraries-engineering-resources-research",
     "Articles_chatgpt-bio-and-memory",
     "Articles_chatgpt-code-pkglist-08232024",
     "Articles_chatgpt-code-python-pkglist-08232024",
+    "SystemPrompts_promptsmith-9000-system-prompt",
+    "SystemPrompts_ultimate-prompt-generator-system-prompt",
     "SystemPrompts_06092025-official-anthropic-claude-system-prompts",
     "SystemPrompts_20240304-Claude3",
     "SystemPrompts_20240320-Claude3",
@@ -1699,8 +1704,8 @@
     "Jailbreak_jb1"
   ],
   "embedding_shape": [
-    1696,
+    1701,
     384
   ],
-  "created_at": "2025-06-12T09:09:43"
+  "created_at": "2025-06-13T03:24:49"
 }

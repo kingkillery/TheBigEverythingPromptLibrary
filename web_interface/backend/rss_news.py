@@ -12,28 +12,21 @@ fallback to simple requests + regex title extraction.
 import time
 import threading
 from typing import List, Dict, Any
-import feedparser
-import requests
 
-# --- Temporary compatibility shim for Python ≥ 3.13 ---------------------------
-# The 'cgi' module was removed in Python 3.13. Some third-party libraries such
-# as "feedparser" still import it (primarily for the simple helper
-# `cgi.parse_header`).  To avoid crashing the application under the latest
-# interpreter we create a minimal stub that implements *just* the functionality
-# required by Feedparser.  Once feedparser removes its dependency we can delete
-# this shim.
-
+# -----------------------------------------------------------------------------
+# Compatibility shim for libraries that depend on modules removed in
+# recent Python versions.
+# -----------------------------------------------------------------------------
 import sys
 import types
 
+# Feedparser still imports the deprecated standard-library module `cgi`, which
+# was removed in Python 3.13.  We provide a very small subset of the former
+# interface so that `feedparser` continues to work.
 if sys.version_info >= (3, 13) and 'cgi' not in sys.modules:  # pragma: no cover
     def _parse_header(value: str):  # type: ignore
-        """Lightweight replacement for `cgi.parse_header`.
-
-        Returns a tuple of `(main_value, params_dict)`.  This naive
-        implementation is good enough for Feedparser's needs (parsing the
-        HTTP `Content-Type` header).  It intentionally avoids pulling in heavy
-        dependencies such as the standalone `email` package.
+        """Replacement for `cgi.parse_header` used by Feedparser.
+        Returns the main header value and a dict of parameters.
         """
         if not value:
             return "", {}
@@ -51,6 +44,9 @@ if sys.version_info >= (3, 13) and 'cgi' not in sys.modules:  # pragma: no cover
     sys.modules['cgi'] = cgi_stub
 
 # -----------------------------------------------------------------------------
+
+import feedparser
+import requests
 
 AI_FEEDS = {
     "google_news": "https://news.google.com/rss/search?q=artificial+intelligence&hl=en-US&gl=US&ceid=US:en",
