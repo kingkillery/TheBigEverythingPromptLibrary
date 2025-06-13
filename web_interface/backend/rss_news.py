@@ -15,6 +15,43 @@ from typing import List, Dict, Any
 import feedparser
 import requests
 
+# --- Temporary compatibility shim for Python ≥ 3.13 ---------------------------
+# The 'cgi' module was removed in Python 3.13. Some third-party libraries such
+# as "feedparser" still import it (primarily for the simple helper
+# `cgi.parse_header`).  To avoid crashing the application under the latest
+# interpreter we create a minimal stub that implements *just* the functionality
+# required by Feedparser.  Once feedparser removes its dependency we can delete
+# this shim.
+
+import sys
+import types
+
+if sys.version_info >= (3, 13) and 'cgi' not in sys.modules:  # pragma: no cover
+    def _parse_header(value: str):  # type: ignore
+        """Lightweight replacement for `cgi.parse_header`.
+
+        Returns a tuple of `(main_value, params_dict)`.  This naive
+        implementation is good enough for Feedparser's needs (parsing the
+        HTTP `Content-Type` header).  It intentionally avoids pulling in heavy
+        dependencies such as the standalone `email` package.
+        """
+        if not value:
+            return "", {}
+        parts = [p.strip() for p in value.split(';')]
+        main_value = parts[0]
+        params = {}
+        for part in parts[1:]:
+            if '=' in part:
+                k, v = part.split('=', 1)
+                params[k.strip().lower()] = v.strip().strip('"')
+        return main_value, params
+
+    cgi_stub = types.ModuleType('cgi')
+    cgi_stub.parse_header = _parse_header  # type: ignore[attr-defined]
+    sys.modules['cgi'] = cgi_stub
+
+# -----------------------------------------------------------------------------
+
 AI_FEEDS = {
     "google_news": "https://news.google.com/rss/search?q=artificial+intelligence&hl=en-US&gl=US&ceid=US:en",
     "flipboard_ai": "https://flipboard.com/topic/artificialintelligence.rss",
