@@ -919,7 +919,10 @@ async function processPrompt() {
   if (btn) btn.disabled = true;
 
   try {
-    const data = await postJSON("/api/chat/process", { prompt, max_results: 5 });
+    // Get selected prompt format
+    const formatSelect = document.getElementById("promptFormat");
+    const format = formatSelect ? formatSelect.value : "promptscript";
+    const data = await postJSON("/api/chat/process", { prompt, max_results: 5, format });
     renderChatOutput(data);
   } catch (err) {
     console.error(err);
