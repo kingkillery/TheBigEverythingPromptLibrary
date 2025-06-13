@@ -6,6 +6,7 @@ This directory contains comprehensive security resources for Large Language Mode
 
 ### Comprehensive Security Analysis
 - **[LLM Security: Prompt Injection Defense and Jailbreak Analysis](./06092025-llm-security-prompt-injection-defense.md)** - In-depth analysis of LLM security vulnerabilities, prompt injection attacks, jailbreak techniques, and defensive strategies
+- **[Advanced Prompt Injection Defense Strategies (2025)](./12122025-advanced-prompt-injection-defense-2025.md)** - Cutting-edge defense mechanisms based on 2024-2025 research, including CaMeL defense, SecAlign, and multi-layer protection systems
 
 ## 🛡️ GPT Protection Techniques
 

@@ -1,5 +1,9 @@
 Here you will find a series of useful articles that cover a variety of topics.
 
+# Research Collections & Surveys
+
+- 12/12/2025 - [Comprehensive Prompt Engineering Research Collection (2024-2025)](./12122025-comprehensive-prompt-engineering-research-2024-2025.md) - Curated collection of high-quality research papers on prompt engineering, AI safety, and advanced techniques
+
 # ChatGPT
 
 - 04/29/2024 - [ChatGPT: Memory and how it works](./chatgpt-bio-tool-and-memory/chatgpt-bio-and-memory.md)

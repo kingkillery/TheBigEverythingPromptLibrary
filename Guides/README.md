@@ -7,6 +7,9 @@ Comprehensive guides for AI tools, prompting techniques, and development workflo
 ### Prompt Engineering
 - **[Advanced Prompt Engineering Techniques](./06092025-advanced-prompt-engineering-techniques.md)** - Cutting-edge prompt engineering techniques including Chain-of-Thought, reasoning patterns, and advanced AI interaction methods developed through 2024-2025
 - **[Comprehensive Prompt Repository Integration Guide](./06092025-comprehensive-prompt-repository-integration-guide.md)** - Research-based guide covering top prompt repositories, integration strategies, and community resources for expanding prompt libraries
+- **[Many-Shot In-Context Learning Guide](./12122025-many-shot-in-context-learning-comprehensive-guide.md)** - Advanced prompting technique using hundreds or thousands of examples for superior performance, based on 2024-2025 research
+- **[EvoPrompt: Evolutionary Optimization Guide](./12122025-evoprompt-evolutionary-optimization-guide.md)** - Automated prompt optimization using evolutionary algorithms for superior performance, achieving up to 25% improvements
+- **[Constitutional AI and Alignment Guide](./12122025-constitutional-ai-alignment-comprehensive-guide.md)** - Building helpful, harmless, and honest AI systems through constitutional principles and self-critique
 
 ### GPT Models
 - **[GPT-4.1 Prompting Guide](./06082025-gpt4.1-prompting-guide.md)** - Official OpenAI guide for GPT-4.1 family models with improved instruction following, agentic capabilities, and long context performance (1M tokens)
