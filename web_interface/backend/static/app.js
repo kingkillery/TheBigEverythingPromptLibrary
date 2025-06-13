@@ -1109,6 +1109,47 @@ window.addEventListener("DOMContentLoaded", () => {
       search();
     });
   }
+
+  const plantBtn = document.getElementById("plantPromptBtn");
+  const plantModal = document.getElementById("plantModal");
+  if (plantBtn && plantModal) {
+    const openModal = () => plantModal.classList.remove("hidden");
+    const closeModal = () => plantModal.classList.add("hidden");
+    plantBtn.addEventListener("click", openModal);
+    document.getElementById("plantCancelBtn").addEventListener("click", closeModal);
+    plantModal.addEventListener("click", (e) => { if (e.target === plantModal) closeModal(); });
+    document.getElementById("plantSubmitBtn").addEventListener("click", async () => {
+      const title = document.getElementById("plantTitle").value.trim();
+      const promptText = document.getElementById("plantPromptText").value.trim();
+      const category = document.getElementById("plantCategory").value.trim();
+      const feedback = document.getElementById("plantFeedback");
+      if (!title || !promptText) {
+        feedback.textContent = "Title and prompt cannot be empty.";
+        feedback.className = "text-red-600";
+        return;
+      }
+      feedback.textContent = "Validating...";
+      feedback.className = "text-gray-600";
+      try {
+        const res = await postJSON("/api/plant", {
+          title,
+          prompt: promptText,
+          category_hint: category,
+          user_id: getUserId(),
+        });
+        if (res.accepted) {
+          feedback.innerHTML = `<span class='text-emerald-600'>🌸 Prompt planted successfully!</span>`;
+          createConfetti();
+          // auto-close modal after short delay
+          setTimeout(closeModal, 1500);
+        } else {
+          feedback.innerHTML = `<span class='text-red-600'>Rejected at stage: ${res.stage_failed}</span>`;
+        }
+      } catch (err) {
+        feedback.innerHTML = `<span class='text-red-600'>Error: ${err}</span>`;
+      }
+    });
+  }
 });
 
 // Utility: get or generate userId stored locally

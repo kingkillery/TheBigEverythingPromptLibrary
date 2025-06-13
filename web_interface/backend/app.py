@@ -102,6 +102,13 @@ except ImportError:
     CHAT_API_AVAILABLE = False
     print("Chat API not available. Some AI provider dependencies may be missing.")
 
+from prompt_pipeline import PromptPipeline, PromptPipelineResult  # NEW
+from github_bot import push_markdown  # NEW
+try:
+    from slugify import slugify  # type: ignore
+except ImportError:
+    slugify = None  # fallback handled later
+
 app = FastAPI(title="Prompt Library API", version="1.0.0")
 
 # Include chat router if available
@@ -561,6 +568,15 @@ class IndexManager:
 
 # Initialize the index manager
 index_manager = IndexManager()
+
+# Instantiate shared pipeline (reuse llm_connector from index_manager once initialised)
+pipeline = None  # will set after index_manager is ready
+
+# after IndexManager initialisation
+if LLM_CONNECTOR_AVAILABLE and index_manager.llm_connector:
+    pipeline = PromptPipeline(index_manager.llm_connector)
+else:
+    pipeline = PromptPipeline()
 
 @app.get("/")
 async def read_root(request: Request):
@@ -1675,6 +1691,82 @@ def generate_prompt_yaml(task_name: str, input_text: str) -> str:
         "output: optimized_prompt\n"
     )
     return yaml_content
+
+# ---------------------- Prompt Planting Pipeline ----------------------------
+
+class PlantRequest(BaseModel):
+    title: str
+    prompt: str
+    category_hint: Optional[str] = None
+    user_id: Optional[str] = None
+
+class PlantResponse(BaseModel):
+    accepted: bool
+    stage_failed: Optional[str] = None
+    details: Dict[str, Any] = None
+    github_url: Optional[str] = None
+
+@app.post("/api/plant", response_model=PlantResponse)
+async def plant_prompt(payload: PlantRequest):
+    # 1. Validation pipeline
+    result: PromptPipelineResult = await pipeline.validate(payload.prompt)
+    if not result.accepted:
+        return PlantResponse(
+            accepted=False,
+            stage_failed=result.stage_failed,
+            details=result.details,
+        )
+
+    # 2. Categorisation
+    if payload.category_hint:
+        category = payload.category_hint
+        subcat = ""
+    else:
+        suggestion = suggest_category(payload.prompt)
+        if suggestion:
+            category, subcat = suggestion
+        else:
+            category, subcat = ("Uncategorised", "")
+
+    # 3. Generate slug
+    import re, unicodedata
+    if slugify:
+        slug = slugify(payload.title)
+    else:
+        slug = unicodedata.normalize('NFKD', payload.title)
+        slug = re.sub(r'[^a-zA-Z0-9\- ]', '', slug).lower().strip().replace(' ', '-')
+
+    filename = f"{slug}.md"
+    path = f"{category}/{filename}"
+
+    # 4. Tag generation (optional)
+    if LLM_CONNECTOR_AVAILABLE and index_manager.llm_connector:
+        tags = await index_manager.llm_connector.generate_tags(payload.prompt, payload.title) or []
+    else:
+        tags = []
+
+    # 5. Build markdown content
+    import textwrap
+    meta = textwrap.dedent(
+        f"""---
+        title: {payload.title}
+        tags: {tags}
+        score: {result.details['quality']['overall_score']}
+        added: {datetime.utcnow().isoformat()}Z
+        contributor: {payload.user_id or 'anonymous'}
+        ---\n\n"""
+    )
+    content_md = meta + payload.prompt + "\n"
+
+    commit_msg = f"🌱 Add prompt: {payload.title} (automated submission)"
+    success, url_or_error = await push_markdown(path, content_md, commit_msg)
+
+    return PlantResponse(
+        accepted=True,
+        stage_failed=None,
+        details=result.details,
+        github_url=url_or_error if success else None,
+    )
 
 if __name__ == "__main__":
     import uvicorn

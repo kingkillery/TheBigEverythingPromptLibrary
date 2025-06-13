@@ -24,3 +24,6 @@ pygments==2.15.1
 # Added from the code block
 feedparser==6.0.10
 requests==2.31.0
+
+# Added from the code block
+python-slugify>=8.0.1
