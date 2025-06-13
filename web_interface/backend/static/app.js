@@ -856,9 +856,8 @@ function showGraftResult(result, option) {
       </h3>
       <p class="text-gray-600 mb-6">${option.description}</p>
       
-      <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 mb-6 border-2 border-purple-100">
-        <pre class="whitespace-pre-wrap text-sm leading-relaxed">${result}</pre>
-      </div>
+      <!-- Render area for grafted prompt -->
+      <div id="graftResultContent" class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 mb-6 border-2 border-purple-100 prose max-w-none text-sm leading-relaxed"></div>
       
       <div class="flex justify-end gap-3">
         <button onclick="this.closest('.fixed').remove()" class="px-6 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors font-medium">
@@ -872,6 +871,13 @@ function showGraftResult(result, option) {
         </button>
       </div>
     </div>`;
+
+  // Inject formatted markdown into the result container
+  const contentDiv = modal.querySelector('#graftResultContent');
+  if (contentDiv) {
+    contentDiv.innerHTML = formatMarkdown(result);
+  }
+  
   document.body.appendChild(modal);
 }
 
