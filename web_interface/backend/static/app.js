@@ -1,3 +1,4 @@
+'use strict';
 // Enhanced functionality for dopamine-inducing UI
 let userStreak = parseInt(localStorage.getItem('userStreak') || '0');
 let promptsViewed = parseInt(localStorage.getItem('promptsViewed') || '0');
@@ -468,7 +469,7 @@ async function showPrompt(itemId) {
     renderPromptModal(item);
   } catch (err) {
     console.error("Failed to load item", err);
-    alert("Failed to load prompt details. See console for more info.");
+    showSuccessToast("Failed to load prompt details. See console for more info.", 'error');
   }
 }
 
@@ -900,7 +901,7 @@ async function processPrompt() {
   const promptElement = document.getElementById("chatPrompt");
   const prompt = promptElement.value.trim();
   if (!prompt) {
-    alert("Please enter a prompt first.");
+    showSuccessToast("Please enter a prompt first.", 'error');
     return;
   }
 
@@ -916,7 +917,7 @@ async function processPrompt() {
     renderChatOutput(data);
   } catch (err) {
     console.error(err);
-    alert("Failed to process prompt. See console for details.");
+    showSuccessToast("Failed to process prompt. See console for details.", 'error');
   } finally {
     // Deactivate loading state
     vineContainer?.classList.remove("loading");
