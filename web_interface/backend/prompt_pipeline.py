@@ -47,10 +47,28 @@ class PromptPipelineResult:
 class PromptPipeline:
     """Orchestrates the sequential validation checks."""
 
-    def __init__(self, llm_connector=None, quality_threshold: float = 60.0):
+    def __init__(self, llm_connector=None, semantic_engine=None, quality_threshold: float = 60.0, duplicate_threshold: float = 0.8):
+        """Create a validation pipeline.
+
+        Parameters
+        ----------
+        llm_connector : optional
+            Instance of the LLM connector (for alignment + quality grading).
+        semantic_engine : optional
+            Instance of ``SemanticSearchEngine`` already initialised with all
+            library items. When supplied we enable duplicate-detection.
+        quality_threshold : float, default 60.0
+            Minimum overall score required from ``PromptGrader``.
+        duplicate_threshold : float, default 0.8
+            Cosine similarity above which a prompt is considered *too similar*
+            to an existing entry and therefore rejected.
+        """
+
         self.llm_connector = llm_connector
+        self.semantic_engine = semantic_engine
         self.grader = PromptGrader(llm_connector)
         self.quality_threshold = quality_threshold
+        self.duplicate_threshold = duplicate_threshold
 
     # -------------------- public API -------------------- #
 
@@ -75,6 +93,22 @@ class PromptPipeline:
         if grade["overall_score"] < self.quality_threshold:
             return PromptPipelineResult(False, "quality", details)
 
-        # (Optional) 4. Redundancy – ToDo: implement embedding similarity
+        # 4. Redundancy / Duplicate detection
+        if self.semantic_engine and getattr(self.semantic_engine, "embeddings", None) is not None:
+            try:
+                similar = self.semantic_engine.semantic_search(prompt, top_k=1)
+            except Exception:
+                similar = []
 
+            if similar:
+                sim_score, sim_item = similar[0]
+                details["redundancy"] = {
+                    "similarity": sim_score,
+                    "matched_id": sim_item.id,
+                    "matched_title": sim_item.title,
+                }
+                if sim_score >= self.duplicate_threshold:
+                    return PromptPipelineResult(False, "redundancy", details)
+
+        # Accepted 🎉
         return PromptPipelineResult(True, None, details) 

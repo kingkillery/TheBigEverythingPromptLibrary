@@ -142,6 +142,8 @@ class PromptItem(BaseModel):
     tags: List[str] = []
     created_date: Optional[str] = None
     version: Optional[str] = None
+    views: Optional[int] = 0
+    grafts: Optional[int] = 0
 
 class SearchResponse(BaseModel):
     items: List[PromptItem]
@@ -570,13 +572,10 @@ class IndexManager:
 index_manager = IndexManager()
 
 # Instantiate shared pipeline (reuse llm_connector from index_manager once initialised)
-pipeline = None  # will set after index_manager is ready
-
-# after IndexManager initialisation
-if LLM_CONNECTOR_AVAILABLE and index_manager.llm_connector:
-    pipeline = PromptPipeline(index_manager.llm_connector)
-else:
-    pipeline = PromptPipeline()
+pipeline = PromptPipeline(
+    llm_connector=index_manager.llm_connector if LLM_CONNECTOR_AVAILABLE else None,
+    semantic_engine=index_manager.semantic_search,
+)
 
 @app.get("/")
 async def read_root(request: Request):
