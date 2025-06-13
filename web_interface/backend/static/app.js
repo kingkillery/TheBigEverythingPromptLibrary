@@ -701,6 +701,32 @@ function renderPromptModal(item) {
   });
   actions.appendChild(remixBtn);
 
+  // Add Water button
+  const waterBtn = document.createElement("button");
+  waterBtn.className = "px-6 py-3 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-xl hover:from-sky-600 hover:to-blue-700 text-sm font-medium transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2";
+  waterBtn.innerHTML = `<span>💧</span><span>Water</span>`;
+  waterBtn.addEventListener("click", async () => {
+    const original = waterBtn.innerHTML;
+    waterBtn.innerHTML = `<div class='animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent'></div><span>Watering...</span>`;
+    try {
+      const res = await fetch(`/api/prompts/${encodeURIComponent(item.id)}/water`, {
+        method: "POST",
+        headers: { "X-User-Id": getUserId() }
+      });
+      if (res.ok) {
+        waterBtn.innerHTML = `<span>💧</span><span>Watered!</span>`;
+        createConfetti();
+        setTimeout(() => { waterBtn.innerHTML = original; }, 2000);
+      } else {
+        waterBtn.innerHTML = original;
+        showSuccessToast("Failed to water ☹️", 'error');
+      }
+    } catch (e) {
+      waterBtn.innerHTML = original;
+    }
+  });
+  actions.appendChild(waterBtn);
+
   modal.appendChild(actions);
   overlay.appendChild(modal);
   document.body.appendChild(overlay);

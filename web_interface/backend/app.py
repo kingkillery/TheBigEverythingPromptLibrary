@@ -1768,6 +1768,17 @@ async def plant_prompt(payload: PlantRequest):
         github_url=url_or_error if success else None,
     )
 
+# -------------------- Water (Upvote) endpoint --------------------
+
+@app.post("/api/prompts/{prompt_id}/water")
+async def water_prompt(prompt_id: str, user_id: str = Header("", alias="X-User-Id")):
+    """Increment the watering count (graft) for a prompt."""
+    try:
+        record_graft(prompt_id)
+        return {"ok": True}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
