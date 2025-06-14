@@ -7,6 +7,10 @@ import pytest
 
 from web_interface.backend.prompt_pipeline import PromptPipeline
 
+# Ensure moderation cache is empty so each test starts fresh
+import web_interface.backend.content_moderator as _cm
+_cm._CACHE.clear()
+
 # ----------------------------- Fixtures ----------------------------- #
 
 @pytest.fixture(scope="module")
