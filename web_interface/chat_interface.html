@@ -241,7 +241,6 @@
                     <div 
                         class="flex-1 bg-gray-50 border-l border-gray-200" 
                         style="margin-top: 64px;"
-                        v-show="showCanvas"
                     >
                         <artifact-canvas 
                             v-if="currentArtifact"
@@ -250,12 +249,8 @@
                             @close="closeArtifact"
                         ></artifact-canvas>
                         
-                        <div v-else class="flex items-center justify-center h-full text-gray-500">
-                            <div class="text-center">
-                                <div class="text-6xl mb-4">🎨</div>
-                                <p class="text-lg">Canvas Area</p>
-                                <p class="text-sm">Artifacts will appear here for inline editing</p>
-                            </div>
+                        <div v-else class="h-full">
+                            <iframe src="/canvas" class="w-full h-full border-0"></iframe>
                         </div>
                     </div>
                     

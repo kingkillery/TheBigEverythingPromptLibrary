@@ -603,6 +603,11 @@ async def ping():
         "items_indexed": len(index_manager.index)
     }
 
+@app.get("/canvas", response_class=HTMLResponse)
+async def canvas_interface(request: Request):
+    """Serve the Canvas editor UI"""
+    return templates.TemplateResponse("canvas.html", {"request": request})
+
 # ---------------------- Search Configuration Endpoints ----------------------
 
 @app.get("/api/search/config")

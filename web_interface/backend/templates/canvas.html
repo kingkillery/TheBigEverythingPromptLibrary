@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prompt Canvas Editor</title>
+  <!-- Tailwind for quick styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Full-screen editor height helper */
+    #editorArea {
+      height: calc(100vh - 10rem); /* header + footer padding */
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-fuchsia-50 via-pink-50 to-rose-50 text-gray-900 min-h-screen flex flex-col">
+  <!-- Header -->
+  <header class="px-4 py-4 flex items-center justify-between shadow-md bg-white/80 backdrop-blur-sm">
+    <div class="flex items-center gap-2">
+      <button onclick="window.location.href='/'" class="px-3 py-1 rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:from-emerald-600 hover:to-green-700">
+        ← Back
+      </button>
+      <h1 class="text-xl font-bold text-rose-600">Canvas Editor</h1>
+    </div>
+    <button id="saveBtn" class="px-4 py-2 bg-gradient-to-r from-fuchsia-500 to-pink-600 text-white rounded-lg shadow hover:from-fuchsia-600 hover:to-pink-700 transition">Save ✨</button>
+  </header>
+
+  <!-- Main content -->
+  <main class="flex-1 p-4 max-w-5xl w-full mx-auto">
+    <div class="mb-4 grid gap-4 md:grid-cols-2">
+      <input id="canvasTitle" type="text" placeholder="Title" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pink-300" />
+      <input id="canvasCategory" type="text" placeholder="Category (optional)" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pink-300" />
+    </div>
+    <textarea id="editorArea" class="w-full border-2 border-pink-200 rounded-xl p-4 shadow focus:outline-none focus:ring-4 focus:ring-pink-300 resize-none" placeholder="Write or paste your prompt here..."></textarea>
+    <p id="statusMsg" class="mt-2 text-sm text-gray-600"></p>
+  </main>
+
+  <!-- Footer -->
+  <footer class="p-4 text-center text-xs text-gray-500">
+    Planting seeds of creativity 🌱
+  </footer>
+
+  <script>
+    // Basic save handler — posts to existing /api/plant endpoint
+    document.getElementById("saveBtn").addEventListener("click", async () => {
+      const title = document.getElementById("canvasTitle").value.trim();
+      const prompt = document.getElementById("editorArea").value.trim();
+      const category = document.getElementById("canvasCategory").value.trim();
+      const status = document.getElementById("statusMsg");
+      if (!title || !prompt) {
+        status.textContent = "Title and prompt cannot be empty.";
+        status.classList.add("text-red-600");
+        return;
+      }
+      status.textContent = "Saving...";
+      status.classList.remove("text-red-600");
+      try {
+        const res = await fetch("/api/plant", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, prompt, category_hint: category })
+        });
+        const data = await res.json();
+        if (data.accepted) {
+          status.textContent = "🌱 Prompt planted successfully!";
+          status.classList.add("text-emerald-600");
+          setTimeout(() => window.location.href = "/", 1500);
+        } else {
+          status.textContent = "Error: " + (data.stage_failed || "Submission rejected");
+          status.classList.add("text-red-600");
+        }
+      } catch (err) {
+        status.textContent = "Network error. Please try again.";
+        status.classList.add("text-red-600");
+      }
+    });
+  </script>
+</body>
+</html>
