@@ -20,6 +20,27 @@ Welcome to your one-stop collection for **prompts that actually work**! This rep
 - [Advanced Techniques](./Jailbreak/README.md)
 - [Security & Protection](./Security/README.md)
 
+## 🛠️ Installation & Requirements
+
+### Using Python
+
+1. Ensure **Python 3.10+** is installed.
+2. *(Optional but recommended)* Create and activate a virtual environment.
+3. Install dependencies:
+   ```bash
+   pip install -r web_interface/requirements.txt
+   ```
+
+### Using Docker
+
+Spin everything up in a single step:
+```bash
+docker compose up -d   # run from repo root
+```
+For advanced options see [DOCKER_SETUP.md](./DOCKER_SETUP.md).
+
+---
+
 ## Quick Start
 
 1. **Browse by category** using the links above
@@ -53,6 +74,15 @@ python -m uvicorn app:app --reload  # requires Python 3.10+
 then open http://localhost:8000.
 
 Docker users can just `docker compose up -d` at repo root as before.
+
+---
+
+## 📚 Additional Documentation
+- [web_interface/INSTALLATION.md](./web_interface/INSTALLATION.md) – Full setup options
+- [web_interface/LLM_SETUP.md](./web_interface/LLM_SETUP.md) – Connecting local / hosted LLMs
+- [web_interface/README.md](./web_interface/README.md) – Interface features & search tips
+- [DOCKER_SETUP.md](./DOCKER_SETUP.md) – Docker walkthrough & troubleshooting
+
 
 ## Contributing Your Prompts
 
