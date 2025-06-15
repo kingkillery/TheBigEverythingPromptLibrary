@@ -105,12 +105,37 @@
                             </div>
                             <div class="flex items-center gap-2">
                                 <select v-model="selectedModel" class="p-2 border rounded-md bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-gray-700 shadow-sm transition-colors duration-150 ease-in-out">
-                                    <option value="deepseek/deepseek-chat-v3:free">DeepSeek Chat V3 (Free)</option>
+                                    <option value="deepseek/deepseek-r1-0528-qwen3-8b:free">DeepSeek R1 0528 Qwen3 8B (Free)</option>
+                                    <option value="deepseek/deepseek-r1-0528:free">DeepSeek R1 0528 (Free)</option>
+                                    <option value="sarvamai/sarvam-m:free">Sarvam-M (Free)</option>
+                                    <option value="mistralai/devstral-small:free">Devstral Small (Free)</option>
+                                    <option value="google/gemma-3n-e4b-it:free">Gemma 3N E4B IT (Free)</option>
+                                    <option value="meta-llama/llama-3.3-8b-instruct:free">Llama 3.3 8B Instruct (Free)</option>
+                                    <option value="nousresearch/deephermes-3-mistral-24b-preview:free">DeepHermes 3 Mistral 24B Preview (Free)</option>
+                                    <option value="microsoft/phi-4-reasoning-plus:free">Phi-4 Reasoning Plus (Free)</option>
+                                    <option value="microsoft/phi-4-reasoning:free">Phi-4 Reasoning (Free)</option>
+                                    <option value="opengvlab/internvl3-14b:free">InternVL3 14B (Free)</option>
+                                    <option value="deepseek/deepseek-prover-v2:free">DeepSeek Prover V2 (Free)</option>
+                                    <option value="qwen/qwen3-30b-a3b:free">Qwen3 30B A3B (Free)</option>
+                                    <option value="qwen/qwen3-8b:free">Qwen3 8B (Free)</option>
+                                    <option value="qwen/qwen3-32b:free">Qwen3 32B (Free)</option>
+                                    <option value="qwen/qwen3-235b-a22b:free">Qwen3 235B A22B (Free)</option>
+                                    <option value="tngtech/deepseek-r1t-chimera:free">DeepSeek R1T Chimera (Free)</option>
+                                    <option value="microsoft/mai-ds-r1:free">MAI DS R1 (Free)</option>
+                                    <option value="thudm/glm-z1-32b:free">GLM Z1 32B (Free)</option>
+                                    <option value="thudm/glm-4-32b:free">GLM-4 32B (Free)</option>
+                                    <option value="arliai/qwq-32b-arliai-rpr-v1:free">QWQ 32B ArlIAI RPR V1 (Free)</option>
+                                    <option value="agentica-org/deepcoder-14b-preview:free">DeepCoder 14B Preview (Free)</option>
+                                    <option value="shisa-ai/shisa-v2-llama3.3-70b:free">Shisa V2 Llama3.3 70B (Free)</option>
+                                    <option value="moonshotai/kimi-vl-a3b-thinking:free">Kimi VL A3B Thinking (Free)</option>
+                                    <option value="nvidia/llama-3.3-nemotron-super-49b-v1:free">Llama 3.3 Nemotron Super 49B V1 (Free)</option>
+                                    <option value="nvidia/llama-3.1-nemotron-ultra-253b-v1:free">Llama 3.1 Nemotron Ultra 253B V1 (Free)</option>
+                                    <option value="meta-llama/llama-4-maverick:free">Llama 4 Maverick (Free)</option>
+                                    <option value="meta-llama/llama-4-scout:free">Llama 4 Scout (Free)</option>
                                     <option value="deepseek/deepseek-v3-base:free">DeepSeek V3 Base (Free)</option>
-                                    <option value="deepseek/deepseek-r1:free">DeepSeek R1 (Free)</option>
-                                    <option value="qwen/qwen3-8b:free">Qwen3-8B (Free)</option>
-                                    <option value="qwen/qwen3-32b:free">Qwen3-32B (Free)</option>
-                                    <option value="thudm/glm-4-32b:free">GLM-4-32B (Free)</option>
+                                    <option value="qwen/qwen2.5-vl-3b-instruct:free">Qwen2.5 VL 3B Instruct (Free)</option>
+                                    <option value="featherless/qwerky-72b:free">Qwerky 72B (Free)</option>
+                                    <option value="qwen/qwq-32b:free">QWQ 32B (Free)</option>
                                 </select>
                                 <button @click="showPromptLibrary" class="p-2 text-gray-500 hover:text-emerald-600 rounded-lg hover:bg-emerald-50" title="Browse Prompt Library">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -297,7 +322,7 @@
                 const messages = ref([]);
                 const messageInput = ref('');
                 const isTyping = ref(false);
-                const selectedModel = ref('deepseek/deepseek-chat-v3:free'); // Default OpenRouter free model
+                const selectedModel = ref('deepseek/deepseek-r1-0528-qwen3-8b:free'); // Default to first in the new list
                 const chatWidth = ref(50);
                 const currentArtifact = ref(null);
                 const messagesContainer = ref(null);
