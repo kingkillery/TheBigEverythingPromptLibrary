@@ -6,6 +6,13 @@
     <title>AI Chat Interface - Artificial Garden</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/material-darker.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/xml/xml.min.js"></script>
     <style>
         /* Custom animations and styles */
         @keyframes fade-in {
@@ -67,6 +74,15 @@
             background: #059669;
         }
         
+        /* Bubble fade-in */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         /* Selection styles */
         ::selection {
             background: rgba(16, 185, 129, 0.2);
@@ -86,7 +102,7 @@
     </div>
 
     <script>
-        const { createApp, ref, reactive, computed, onMounted, nextTick } = Vue;
+        const { createApp, ref, reactive, computed, onMounted, nextTick, watch } = Vue;
 
         // Chat Interface Component
         const ChatInterface = {
@@ -137,6 +153,9 @@
                                     <option value="featherless/qwerky-72b:free">Qwerky 72B (Free)</option>
                                     <option value="qwen/qwq-32b:free">QWQ 32B (Free)</option>
                                 </select>
+                                <button @click="loadDemoArtifact" class="p-2 text-emerald-600 hover:text-emerald-700 rounded-lg hover:bg-emerald-50" title="Load Demo Artifact">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                </button>
                                 <button @click="showPromptLibrary" class="p-2 text-gray-500 hover:text-emerald-600 rounded-lg hover:bg-emerald-50" title="Browse Prompt Library">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
@@ -153,12 +172,12 @@
 
                     <!-- Chat Pane -->
                     <div 
-                        class="flex flex-col bg-white" 
+                        class="grid bg-white grid-rows-[1fr_auto]" 
                         :style="{ width: chatWidth + '%' }"
                         style="margin-top: 64px;"
                     >
                         <!-- Messages Area -->
-                        <div class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4" ref="messagesContainer">
+                        <div class="overflow-y-auto custom-scrollbar p-4 space-y-4" ref="messagesContainer">
                             <div v-if="messages.length === 0" class="flex items-center justify-center h-full text-gray-500">
                                 <div class="text-center">
                                     <div class="text-6xl mb-4">🌱</div>
@@ -174,10 +193,10 @@
                                 :class="message.role === 'user' ? 'flex justify-end' : 'flex justify-start'"
                             >
                                 <div 
-                                    class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg shadow-sm"
+                                    class="max-w-xs lg:max-w-md px-4 py-2 shadow-sm"
                                     :class="message.role === 'user' 
-                                        ? 'bg-emerald-500 text-white' 
-                                        : 'bg-gray-100 text-gray-800'"
+                                        ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-lg rounded-br-none' 
+                                        : 'bg-white border border-gray-200 text-gray-800 rounded-lg rounded-bl-none'"
                                 >
                                     <div v-if="message.role === 'assistant' && message.artifact" class="mb-2">
                                         <div class="text-xs text-gray-500 mb-1">Created: {{ message.artifact.type }}</div>
@@ -586,7 +605,7 @@
             props: ['artifact'],
             emits: ['update-artifact', 'close'],
             template: `
-                <div class="h-full flex flex-col">
+                <div class="h-full grid grid-rows-[auto_1fr_auto]">
                     <!-- Canvas Header -->
                     <div class="bg-white border-b border-gray-200 p-4 flex items-center justify-between">
                         <div>
@@ -664,16 +683,22 @@
                             @keyup="handleSelection"
                             ref="contentArea"
                         >
-                            <div class="flex h-full">
+                            <!-- Tab Strip -->
+                                <div class="border-b border-gray-200 flex-shrink-0" role="tablist" @keydown="onTabKeydown">
+                                    <button ref="codeTabButton" role="tab" aria-controls="code-panel" :aria-selected="activeTab === 'code'" :tabindex="activeTab === 'code' ? 0 : -1" @click="activateTab('code')" :class="['px-4 py-2 text-sm font-medium focus:outline-none', activeTab === 'code' ? 'border-b-2 border-emerald-500 text-emerald-600' : 'text-gray-500 hover:text-gray-700']">Code</button>
+                                    <button ref="previewTabButton" role="tab" aria-controls="preview-panel" :aria-selected="activeTab === 'preview'" :tabindex="activeTab === 'preview' ? 0 : -1" @click="activateTab('preview')" :class="['px-4 py-2 text-sm font-medium focus:outline-none', activeTab === 'preview' ? 'border-b-2 border-emerald-500 text-emerald-600' : 'text-gray-500 hover:text-gray-700']">Preview</button>
+                                </div>
+                                <div class="flex h-full">
                                 <!-- Left Pane: Editable Source -->
                                 <div class="flex-1 p-4 border-r border-gray-200 overflow-auto custom-scrollbar">
-                                    <textarea 
-                                        class="w-full h-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-300 font-mono text-sm"
-                                        v-model="editableContent"
-                                    ></textarea>
+                                    <div 
+                                        v-show="activeTab === 'code'"
+                                        ref="editorRef" id="code-panel"
+                                        class="w-full h-full"
+                                    ></div>
                                 </div>
                                 <!-- Right Pane: Live Preview -->
-                                <div class="flex-1 p-4 overflow-auto custom-scrollbar">
+                                <div v-show="activeTab === 'preview'" class="flex-1 p-4 overflow-auto custom-scrollbar">
                                     <div v-if="artifact.type === 'html'" v-html="editableContent"></div>
                                     <div v-else-if="artifact.type === 'code'">
                                         <pre><code>{{ editableContent }}</code></pre>
@@ -723,6 +748,69 @@
                 const showFloatingToolbar = ref(false);
                 const toolbarPosition = ref({ x: 0, y: 0 });
                 const selectedText = ref('');
+                const activeTab = ref('code');
+                const editorRef = ref(null);
+                let codeMirrorInstance = null;
+    const codeTabButton = ref(null);
+    const previewTabButton = ref(null);
+
+    const activateTab = (tab) => {
+        activeTab.value = tab;
+        nextTick(() => {
+            if (tab === 'code') {
+                codeTabButton.value && codeTabButton.value.focus();
+                if (codeMirrorInstance) {
+                    codeMirrorInstance.refresh();
+                }
+            } else {
+                previewTabButton.value && previewTabButton.value.focus();
+            }
+        });
+    };
+
+    const onTabKeydown = (event) => {
+        const { key } = event;
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(key)) return;
+        event.preventDefault();
+        if (key === 'ArrowLeft' || key === 'ArrowRight') {
+            activateTab(activeTab.value === 'code' ? 'preview' : 'code');
+        } else if (key === 'Home') {
+            activateTab('code');
+        } else if (key === 'End') {
+            activateTab('preview');
+        }
+    };
+                const editableContent = ref(props.artifact.content);
+
+                onMounted(() => {
+                    if (editorRef.value) {
+                        codeMirrorInstance = CodeMirror(editorRef.value, {
+                            value: editableContent.value,
+                            mode: props.artifact.type === 'html' ? 'htmlmixed' : 'javascript',
+                            lineNumbers: true,
+                            theme: 'material-darker',
+                            viewportMargin: Infinity,
+                            lineWrapping: true,
+                        });
+                        codeMirrorInstance.on('change', () => {
+                            editableContent.value = codeMirrorInstance.getValue();
+                        });
+                    }
+                });
+
+                watch(activeTab, (newVal) => {
+                    if (newVal === 'code' && codeMirrorInstance) {
+                        nextTick(() => {
+                            codeMirrorInstance.refresh();
+                        });
+                    }
+                });
+
+                watch(editableContent, (val) => {
+                    if (codeMirrorInstance && codeMirrorInstance.getValue() !== val) {
+                        codeMirrorInstance.setValue(val);
+                    }
+                });
                 const contentArea = ref(null);
                 
                 const currentContent = computed(() => {
@@ -876,6 +964,9 @@
                     showFloatingToolbar,
                     toolbarPosition,
                     contentArea,
+                    editableContent,
+                    activeTab,
+                    editorRef,
                     handleSelection,
                     hideFloatingToolbar,
                     improveSelection,
