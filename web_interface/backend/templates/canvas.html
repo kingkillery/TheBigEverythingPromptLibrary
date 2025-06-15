@@ -3,77 +3,193 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Prompt Canvas Editor</title>
-  <!-- Tailwind for quick styling -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Canvas Editor — AI Ready</title>
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Marked.js for Markdown parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
-    /* Full-screen editor height helper */
-    #editorArea {
-      height: calc(100vh - 10rem); /* header + footer padding */
+    /* ========== GLOBAL THEME ========== */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", sans-serif;
+      background: #f7f9fc;
+      color: #111;
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 35% 65%;
     }
+
+    /* -------- Chat Pane -------- */
+    .chat-pane {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #e5e7eb;
+      background: #ffffff;
+    }
+    .chat-header {
+      padding: 1rem 1.25rem;
+      font-weight: 600;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .chat-body {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+    .chat-msg { margin-bottom: .5rem; font-size: .85rem; }
+    .chat-msg.ai { color: #16a34a; }
+    .chat-msg.user { color: #7c3aed; }
+    /* -------- Editor Pane -------- */
+    .editor-pane { display: flex; flex-direction: column; }
+    .editor-header { padding: 1rem 1.25rem; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e5e7eb; }
+    .editor-header h2 { font-size:1rem; color:#ef4444; margin:0; font-weight:600; }
+    .toolbar { display:flex; gap:.5rem; padding:.5rem 1.25rem; border-bottom:1px solid #e5e7eb; background:#fafafa; }
+    .btn { background:#ef4444; border:none; color:#fff; padding:.35rem .85rem; font-size:.8rem; border-radius:6px; cursor:pointer; }
+    .btn.secondary { background:#6b7280; }
+    .btn:disabled { opacity:.5; cursor:not-allowed; }
+
+    /* -------- Workspace -------- */
+    .workspace { flex:1; display:grid; grid-template-columns:1fr 1fr; overflow:hidden; }
+    textarea { width:100%; height:100%; padding:1rem; border:none; resize:none; font-family:"Fira Code",monospace; font-size:.9rem; line-height:1.5; border-right:1px solid #e5e7eb; outline:none; }
+    .preview { padding:1rem 1.25rem; overflow-y:auto; }
+    .preview h1,.preview h2,.preview h3{ margin-top:1.25rem; }
+    .preview pre { background:#f3f4f6; padding:.75rem 1rem; border-radius:6px; overflow-x:auto; }
+    .preview code { color:#ef4444; }
+
+    /* -------- Suggestion Panel -------- */
+    .suggestion-panel { position:absolute; top:120px; right:20px; width:280px; background:#fff; box-shadow:0 4px 12px rgba(0,0,0,.08); border-radius:8px; padding:1rem; display:none; z-index:10; }
+    .suggestion-panel pre { margin:0; white-space:pre-wrap; word-wrap:break-word; font-family:"Fira Code",monospace; font-size:.8rem; }
   </style>
 </head>
-<body class="bg-gradient-to-br from-fuchsia-50 via-pink-50 to-rose-50 text-gray-900 min-h-screen flex flex-col">
-  <!-- Header -->
-  <header class="px-4 py-4 flex items-center justify-between shadow-md bg-white/80 backdrop-blur-sm">
-    <div class="flex items-center gap-2">
-      <button onclick="window.location.href='/'" class="px-3 py-1 rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:from-emerald-600 hover:to-green-700">
-        ← Back
-      </button>
-      <h1 class="text-xl font-bold text-rose-600">Canvas Editor</h1>
-    </div>
-    <button id="saveBtn" class="px-4 py-2 bg-gradient-to-r from-fuchsia-500 to-pink-600 text-white rounded-lg shadow hover:from-fuchsia-600 hover:to-pink-700 transition">Save ✨</button>
-  </header>
+<body>
+<!-- ===== Chat Pane ===== -->
+<div class="chat-pane">
+  <div class="chat-header">AI Chat Interface</div>
+  <div class="chat-body" id="chatBody">🌱 Start a conversation with AI</div>
+</div>
 
-  <!-- Main content -->
-  <main class="flex-1 p-4 max-w-5xl w-full mx-auto">
-    <div class="mb-4 grid gap-4 md:grid-cols-2">
-      <input id="canvasTitle" type="text" placeholder="Title" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pink-300" />
-      <input id="canvasCategory" type="text" placeholder="Category (optional)" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pink-300" />
-    </div>
-    <textarea id="editorArea" class="w-full border-2 border-pink-200 rounded-xl p-4 shadow focus:outline-none focus:ring-4 focus:ring-pink-300 resize-none" placeholder="Write or paste your prompt here..."></textarea>
-    <p id="statusMsg" class="mt-2 text-sm text-gray-600"></p>
-  </main>
+<!-- ===== Editor Pane ===== -->
+<div class="editor-pane">
+  <div class="editor-header">
+    <h2>Canvas Editor</h2>
+    <button class="btn secondary" id="saveBtn">Save</button>
+  </div>
+  <div class="toolbar">
+    <button class="btn" id="askAiBtn">Ask AI 🤖</button>
+    <button class="btn secondary" id="applyAiBtn" disabled>Apply Suggestion</button>
+  </div>
+  <div class="workspace" id="workspace">
+    <textarea id="markdown" placeholder="# Write your documentation here…"></textarea>
+    <article class="preview" id="preview"></article>
+  </div>
+</div>
 
-  <!-- Footer -->
-  <footer class="p-4 text-center text-xs text-gray-500">
-    Planting seeds of creativity 🌱
-  </footer>
+<!-- Suggestion panel -->
+<aside class="suggestion-panel" id="suggestionPanel">
+  <h4 style="margin-top:0">AI Suggestion</h4>
+  <pre id="suggestionText">Loading …</pre>
+</aside>
+<script>
+/* ================================================================
+   INITIAL SETUP
+   ================================================================ */
+const mdInput = document.getElementById('markdown');
+const preview = document.getElementById('preview');
+const askAiBtn = document.getElementById('askAiBtn');
+const applyAiBtn = document.getElementById('applyAiBtn');
+const suggestionPanel = document.getElementById('suggestionPanel');
+const suggestionText = document.getElementById('suggestionText');
+const chatBody = document.getElementById('chatBody');
 
-  <script>
-    // Basic save handler — posts to existing /api/plant endpoint
-    document.getElementById("saveBtn").addEventListener("click", async () => {
-      const title = document.getElementById("canvasTitle").value.trim();
-      const prompt = document.getElementById("editorArea").value.trim();
-      const category = document.getElementById("canvasCategory").value.trim();
-      const status = document.getElementById("statusMsg");
-      if (!title || !prompt) {
-        status.textContent = "Title and prompt cannot be empty.";
-        status.classList.add("text-red-600");
-        return;
-      }
-      status.textContent = "Saving...";
-      status.classList.remove("text-red-600");
-      try {
-        const res = await fetch("/api/plant", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, prompt, category_hint: category })
-        });
-        const data = await res.json();
-        if (data.accepted) {
-          status.textContent = "🌱 Prompt planted successfully!";
-          status.classList.add("text-emerald-600");
-          setTimeout(() => window.location.href = "/", 1500);
-        } else {
-          status.textContent = "Error: " + (data.stage_failed || "Submission rejected");
-          status.classList.add("text-red-600");
-        }
-      } catch (err) {
-        status.textContent = "Network error. Please try again.";
-        status.classList.add("text-red-600");
-      }
+// Sample content
+mdInput.value = '## Editing & Preview\n- Live preview for Markdown/HTML/React';
+preview.innerHTML = marked.parse(mdInput.value);
+
+// Live preview listener
+mdInput.addEventListener('input', () => {
+  preview.innerHTML = marked.parse(mdInput.value);
+});
+
+/* ================================================================
+   AI-INTEGRATION PLACEHOLDERS
+   ================================================================ */
+// 1⃣  Capture selected text
+function getSelectedMarkdown() {
+  const start = mdInput.selectionStart;
+  const end = mdInput.selectionEnd;
+  return mdInput.value.substring(start, end);
+}
+
+// 2⃣  Call AI editing endpoint
+async function fetchAiSuggestion(selectedText) {
+  // TODO: Replace with production endpoint, pass auth & conversation_id
+  const res = await fetch('/api/ai-edit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: selectedText })
+  });
+  if (!res.ok) throw new Error('AI edit failed');
+  const data = await res.json();
+  return data.suggestion;
+}
+
+// 3⃣  Display suggestion
+function showSuggestion(text) {
+  suggestionText.textContent = text;
+  suggestionPanel.style.display = 'block';
+  applyAiBtn.disabled = false;
+}
+// 4⃣  Apply AI suggestion
+function applySuggestion() {
+  const start = mdInput.selectionStart;
+  const end = mdInput.selectionEnd;
+  const before = mdInput.value.substring(0, start);
+  const after = mdInput.value.substring(end);
+  mdInput.value = before + suggestionText.textContent + after;
+  // Move cursor to just after inserted text
+  mdInput.selectionStart = mdInput.selectionEnd = before.length + suggestionText.textContent.length;
+  mdInput.dispatchEvent(new Event('input')); // refresh preview
+  suggestionPanel.style.display = 'none';
+  applyAiBtn.disabled = true;
+}
+
+/* ================================================================
+   EVENT WIRING
+   ================================================================ */
+askAiBtn.addEventListener('click', async () => {
+  const selected = getSelectedMarkdown();
+  if (!selected) {
+    alert('Select some text first!'); // TODO: replace with toast
+    return;
+  }
+  askAiBtn.disabled = true;
+  showSuggestion('Loading …');
+  try {
+    const suggestion = await fetchAiSuggestion(selected);
+    showSuggestion(suggestion);
+  } catch (err) {
+    showSuggestion('⚠️ Error fetching suggestion');
+  } finally {
+    askAiBtn.disabled = false;
+  }
+});
+
+applyAiBtn.addEventListener('click', applySuggestion);
+
+// Save handler (placeholder)
+document.getElementById('saveBtn').addEventListener('click', async () => {
+  try {
+    const res = await fetch('/api/plant', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'Untitled', prompt: mdInput.value })
     });
-  </script>
+    if (res.ok) alert('✅ Saved');
+    else alert('❌ Save failed');
+  } catch (_) { alert('Network error'); }
+});
+</script>
 </body>
 </html>

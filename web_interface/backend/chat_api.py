@@ -418,6 +418,46 @@ Then provide a brief explanation of what you created.
 # Initialize chat processor
 chat_processor = ChatProcessor()
 
+# ---------------- AI Edit Endpoint -----------------
+class AIEditRequest(BaseModel):
+    text: str
+    conversation_id: Optional[str] = None
+    provider: str = "openai"
+    model: Optional[str] = None
+
+@router.post("/ai-edit")
+async def ai_edit_endpoint(req: AIEditRequest):
+    """Return an AI-suggested improvement for a markdown snippet."""
+    conversation_id = req.conversation_id or str(uuid.uuid4())
+    # Craft a concise prompt so the model returns ONLY the improved snippet
+    prompt = (
+        "You are an expert technical writer. Improve the following markdown snippet. "
+        "Return ONLY the improved snippet, without explanations, code fences, or commentary.\n\n"
+        f"{req.text}"
+    )
+
+    try:
+        response = await chat_processor.process_message(
+            prompt,
+            req.provider,
+            conversation_id,
+            model=req.model,
+        )
+        suggestion = response.get("message", "").strip()
+        # If the model accidentally wrapped content in code fences, strip them
+        if suggestion.startswith("```)" ):
+            import re
+            match = re.search(r"```[\s\S]*?\n([\s\S]*?)```", suggestion)
+            if match:
+                suggestion = match.group(1).strip()
+
+        return {"suggestion": suggestion, "conversation_id": conversation_id}
+
+    except HTTPException:
+        raise  # Re-raise FastAPI HTTP errors
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI edit failed: {str(e)}")
+
 @router.post("/chat")
 async def chat_endpoint(message: ChatMessage):
     """Main chat endpoint for processing user messages."""
