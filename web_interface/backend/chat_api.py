@@ -9,6 +9,7 @@ import json
 import sqlite3
 from datetime import datetime
 from typing import Dict, List, Optional, Any
+import httpx  # Replaced requests with httpx
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request
@@ -33,10 +34,17 @@ try:
 except ImportError:
     GEMINI_AVAILABLE = False
 
+# OpenRouter Configuration
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_AVAILABLE = bool(OPENROUTER_API_KEY)
+SITE_URL = os.getenv("SITE_URL", "http://localhost:8000") # For HTTPReferer
+APP_TITLE = os.getenv("APP_TITLE", "AI Chat Interface") # For X-Title
+
 # Pydantic models
 class ChatMessage(BaseModel):
     message: str
     provider: str = "openai"
+    model: Optional[str] = None  # Added model field
     conversation_id: Optional[str] = None
 
 class ArtifactEdit(BaseModel):
@@ -143,8 +151,11 @@ class ChatProcessor:
         if GEMINI_AVAILABLE:
             genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
             self.providers["gemini"] = self._chat_gemini
+        
+        if OPENROUTER_AVAILABLE:
+            self.providers["openrouter"] = self._chat_openrouter
     
-    async def process_message(self, message: str, provider: str, conversation_id: str) -> Dict[str, Any]:
+    async def process_message(self, message: str, provider: str, conversation_id: str, model: str = None) -> Dict[str, Any]:
         """Process a chat message and return response with potential artifact."""
         if provider not in self.providers:
             raise HTTPException(status_code=400, detail=f"Provider {provider} not available")
@@ -153,7 +164,13 @@ class ChatProcessor:
         needs_artifact = self._should_create_artifact(message)
         
         try:
-            response = await self.providers[provider](message, needs_artifact)
+            if provider == "openrouter":
+                if not model:
+                    # This check was in the previous version of process_message, re-adding for safety.
+                    raise HTTPException(status_code=400, detail="Model must be specified for OpenRouter provider.")
+                response = await self.providers[provider](message, model, needs_artifact)
+            else:
+                response = await self.providers[provider](message, needs_artifact)
             
             # Save conversation message
             self._save_message(conversation_id, "user", message)
@@ -236,6 +253,64 @@ class ChatProcessor:
         response = model.generate_content(f"{system_prompt}\n\nUser: {message}")
         content = response.text
         return self._parse_response(content)
+    
+    async def _chat_openrouter(self, message: str, model: str, needs_artifact: bool) -> Dict[str, Any]:
+        if not OPENROUTER_AVAILABLE:
+            raise HTTPException(status_code=503, detail="OpenRouter API key not configured.")
+
+        api_key = OPENROUTER_API_KEY
+        
+        OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+        
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "HTTPReferer": SITE_URL, 
+            "X-Title": APP_TITLE,
+        }
+        
+        payload = {
+            "model": model,
+            "messages": [{"role": "user", "content": message}]
+        }
+        
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(OPENROUTER_API_URL, headers=headers, json=payload)
+            
+            if response.status_code == 401:
+                raise HTTPException(status_code=401, detail="OpenRouter: Authentication failed. Check API key.")
+            if response.status_code == 402:
+                raise HTTPException(status_code=402, detail="OpenRouter: Insufficient credits or payment required.")
+            if response.status_code == 429:
+                raise HTTPException(status_code=429, detail="OpenRouter: Rate limit exceeded.")
+            response.raise_for_status()
+
+            response_data = response.json()
+            
+            if not response_data.get("choices") or not response_data["choices"][0].get("message") or not response_data["choices"][0]["message"].get("content"):
+                raise HTTPException(status_code=500, detail="OpenRouter: Invalid response format from API.")
+
+            assistant_message = response_data["choices"][0]["message"]["content"]
+            
+            generated_artifact = None
+            if needs_artifact:
+                print(f"Artifact creation requested for OpenRouter model {model}, but not yet implemented.")
+                pass
+
+            return {"message": assistant_message, "artifact": generated_artifact}
+
+        except httpx.ReadTimeout:
+            raise HTTPException(status_code=504, detail=f"OpenRouter: Request timed out after 60 seconds.")
+        except httpx.HTTPStatusError as e:
+            error_detail = f"OpenRouter API error: {e.response.status_code} - {e.response.text[:500]}"
+            print(error_detail)
+            raise HTTPException(status_code=e.response.status_code, detail=f"OpenRouter API error: {e.response.status_code}. Check server logs for more details.")
+        except Exception as e:
+            print(f"Error in _chat_openrouter with model {model}: {type(e).__name__} - {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"An unexpected error occurred with OpenRouter: {str(e)}")
     
     def _get_system_prompt(self, needs_artifact: bool) -> str:
         """Get system prompt based on whether artifact creation is expected."""
@@ -351,7 +426,8 @@ async def chat_endpoint(message: ChatMessage):
     response = await chat_processor.process_message(
         message.message,
         message.provider,
-        conversation_id
+        conversation_id,
+        model=message.model
     )
     
     response["conversation_id"] = conversation_id

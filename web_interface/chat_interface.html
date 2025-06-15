@@ -104,10 +104,13 @@
                                 <h1 class="text-xl font-bold text-emerald-800">🌿 AI Chat Interface</h1>
                             </div>
                             <div class="flex items-center gap-2">
-                                <select v-model="selectedProvider" class="px-3 py-1 text-sm border border-emerald-200 rounded-lg">
-                                    <option value="openai">OpenAI GPT-4</option>
-                                    <option value="claude">Claude 3.5</option>
-                                    <option value="gemini">Gemini 2.0</option>
+                                <select v-model="selectedModel" class="p-2 border rounded-md bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm text-gray-700 shadow-sm transition-colors duration-150 ease-in-out">
+                                    <option value="deepseek/deepseek-chat-v3:free">DeepSeek Chat V3 (Free)</option>
+                                    <option value="deepseek/deepseek-v3-base:free">DeepSeek V3 Base (Free)</option>
+                                    <option value="deepseek/deepseek-r1:free">DeepSeek R1 (Free)</option>
+                                    <option value="qwen/qwen3-8b:free">Qwen3-8B (Free)</option>
+                                    <option value="qwen/qwen3-32b:free">Qwen3-32B (Free)</option>
+                                    <option value="thudm/glm-4-32b:free">GLM-4-32B (Free)</option>
                                 </select>
                                 <button @click="showPromptLibrary" class="p-2 text-gray-500 hover:text-emerald-600 rounded-lg hover:bg-emerald-50" title="Browse Prompt Library">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -294,7 +297,7 @@
                 const messages = ref([]);
                 const messageInput = ref('');
                 const isTyping = ref(false);
-                const selectedProvider = ref('openai');
+                const selectedModel = ref('deepseek/deepseek-chat-v3:free'); // Default OpenRouter free model
                 const chatWidth = ref(50);
                 const currentArtifact = ref(null);
                 const messagesContainer = ref(null);
@@ -381,7 +384,7 @@
                     };
                     
                     messages.value.push(userMessage);
-                    const currentInput = messageInput.value;
+                    const userInput = messageInput.value;
                     messageInput.value = '';
                     
                     await nextTick();
@@ -396,8 +399,9 @@
                                 'Content-Type': 'application/json',
                             },
                             body: JSON.stringify({
-                                message: currentInput,
-                                provider: selectedProvider.value,
+                                message: userInput,
+                                provider: "openrouter", // Hardcode to openrouter
+                                model: selectedModel.value, // Send the selected model identifier
                                 conversation_id: getConversationId()
                             })
                         });
@@ -530,7 +534,7 @@
                     messages,
                     messageInput,
                     isTyping,
-                    selectedProvider,
+                    selectedModel,
                     chatWidth,
                     currentArtifact,
                     showCanvas,
