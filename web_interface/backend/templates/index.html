@@ -596,6 +596,24 @@
       <!-- Enhanced Chat output -->
       <div id="chatOutput" class="space-y-4 mb-8 fade-in" style="animation-delay:0.6s"></div>
 
+      {% if featured_prompts %}
+      <!-- 🌟 Featured Prompts Section -->
+      <section id="featuredPrompts" class="mb-10 fade-in" style="animation-delay:0.6s">
+        <h2 class="text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-600">
+          🌟 Featured Prompts
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {% for prompt in featured_prompts %}
+          <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6 card-interactive transform hover:-translate-y-1 transition-transform" onclick="viewItem('{{ prompt.id }}')">
+            <h3 class="text-lg font-semibold mb-2 line-clamp-2" title="{{ prompt.title }}">{{ prompt.title }}</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">{{ prompt.preview }}</p>
+            <p class="mt-3 text-sm font-medium text-indigo-600 dark:text-indigo-400">View Details →</p>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
       <!-- ✨ Explore by Category with animations -->
       <section id="categorySection" class="mb-10 fade-in" style="animation-delay:0.75s">
         <h2 class="text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-green-600">

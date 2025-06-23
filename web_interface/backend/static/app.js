@@ -473,6 +473,11 @@ function showAllSignals(signalKey, title) {
 }
 
 // NEW CODE: cache + modal display of prompt content
+
+// Ensure featured prompts 'View Details' works
+function viewItem(id) {
+  showPrompt(id);
+}
 const promptCache = {};
 
 async function showPrompt(itemId) {
