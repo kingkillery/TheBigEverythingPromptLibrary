@@ -66,14 +66,28 @@ The library now ships with an **interactive "Prompt Garden" UI** that lets anyon
 
 All submissions are moderated automatically; nothing unsafe ever reaches the main branch.
 
-### Launch the Garden locally
-```powershell
-cd web_interface\backend
-python -m uvicorn app:app --reload  # requires Python 3.10+
-```
-then open http://localhost:8000.
+### 🚀 Run the Frontend & Backend
 
-Docker users can just `docker compose up -d` at repo root as before.
+Choose whichever option suits your workflow ‑ they all expose the UI at **http://localhost:8000**.
+
+**1. Single command (Python, recommended)**
+```bash
+python web_interface/start_server.py
+```
+Starts both the FastAPI backend **and** the static HTML/JS frontend with hot-reload.
+
+**2. Raw Uvicorn (dev mode)**
+```bash
+cd web_interface/backend
+python -m uvicorn app:app --reload
+```
+Same as above but gives you fine-grained control when hacking on backend code.
+
+**3. Docker Compose (full stack in a container)**
+```bash
+docker compose up -d     # run from repo root
+```
+Starts everything in detached mode. Stop with `docker compose down`.
 
 ---
 
