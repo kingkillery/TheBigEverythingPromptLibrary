@@ -578,10 +578,67 @@ pipeline = PromptPipeline(
     semantic_engine=index_manager.semantic_search,
 )
 
+def get_featured_prompts() -> List[Dict[str, Any]]:
+    """Reads and parses the four featured prompts for the homepage."""
+    featured_files = [
+        "Coding-Agent.md",
+        "cursor-custom-modes-bug-explainer.md",
+        "Personalized QA_agent_instructions.md",
+        "Self-Discover-Agent.md"
+    ]
+    prompts_dir = REPO_ROOT / "SystemPrompts"
+    featured_prompts = []
+
+    for filename in featured_files:
+        file_path = prompts_dir / filename
+        if not file_path.exists():
+            continue
+
+        content = index_manager.get_file_content(file_path)
+        title = ""
+        preview_lines = []
+        lines = content.splitlines()
+
+        for line in lines:
+            if line.startswith('# '):
+                title = line[2:].strip()
+                break
+        
+        if not title:
+            title = filename.replace('.md', '').replace('_', ' ').replace('-', ' ').title()
+
+        content_started = False
+        for line in lines:
+            if line.startswith('# '):
+                content_started = True
+                continue
+            if content_started and line.strip() and not line.startswith('#') and not line.startswith('---'):
+                preview_lines.append(line.strip())
+                if len(preview_lines) >= 3:
+                    break
+        
+        preview = " ".join(preview_lines)
+        
+        prompt_id = slugify(filename.replace('.md', '')) if slugify else filename.replace('.md', '')
+
+        featured_prompts.append({
+            "id": prompt_id,
+            "title": title,
+            "preview": preview,
+            "filename": filename 
+        })
+        
+    return featured_prompts
+
+
 @app.get("/")
 async def read_root(request: Request):
     """Serve the frontend HTML"""
-    return templates.TemplateResponse("index.html", {"request": request})
+    featured_prompts = get_featured_prompts()
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "featured_prompts": featured_prompts
+    })
 
 @app.get("/chat", response_class=HTMLResponse)
 async def chat_interface(request: Request):
