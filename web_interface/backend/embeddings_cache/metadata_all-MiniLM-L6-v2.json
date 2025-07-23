@@ -1556,12 +1556,17 @@
     "Guides_12122025-many-shot-in-context-learning-comprehensive-guide",
     "Guides_12122025-prompt-engineering-quick-reference",
     "Guides_12122025-ultimate-prompt-engineering-comprehensive-guide",
+    "Guides_coding-agent-qa-agent-collaboration-guide",
     "Articles_06082025-github-prompt-libraries-engineering-resources-research",
     "Articles_12122025-comprehensive-prompt-engineering-research-2024-2025",
     "Articles_chatgpt-bio-and-memory",
     "Articles_chatgpt-code-pkglist-08232024",
     "Articles_chatgpt-code-python-pkglist-08232024",
+    "SystemPrompts_Coding-Agent",
+    "SystemPrompts_cursor-custom-modes-bug-explainer",
+    "SystemPrompts_Personalized QA_agent_instructions",
     "SystemPrompts_promptsmith-9000-system-prompt",
+    "SystemPrompts_Self-Discover-Agent",
     "SystemPrompts_ultimate-prompt-generator-system-prompt",
     "SystemPrompts_06092025-official-anthropic-claude-system-prompts",
     "SystemPrompts_20240304-Claude3",
@@ -1714,8 +1719,8 @@
     "Jailbreak_jb1"
   ],
   "embedding_shape": [
-    1711,
+    1716,
     384
   ],
-  "created_at": "2025-06-15T06:06:24"
+  "created_at": "2025-07-23T05:40:00"
 }

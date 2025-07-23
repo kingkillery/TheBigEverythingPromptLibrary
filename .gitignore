@@ -41,6 +41,7 @@ OpenJDK-24
 # .idea/modules
 # *.iml
 # *.ipr
+.env
 
 # CMake
 cmake-build-*/
